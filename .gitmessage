@@ -1,0 +1,21 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# Type: feat, fix, docs, style, refactor, test, chore
+# Scope: 影响范围 (可选)
+# Subject: 简短描述 (50字符以内)
+# Body: 详细描述 (可选)
+# Footer: 关闭issue等 (可选)
+
+# 示例:
+# feat(transformer): 添加多头注意力机制
+#
+# 实现了Transformer模型中的多头注意力机制，包括：
+# - 查询、键、值的线性变换
+# - 注意力权重计算
+# - 多头拼接和输出投影
+#
+# Closes #123
