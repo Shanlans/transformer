@@ -21,20 +21,63 @@ class PositionalEncoding(nn.Module):
     """
     位置编码层
     
-    TODO: 实现位置编码
-    - 使用sin和cos函数生成位置编码
-    - 支持不同长度的序列
-    - 与词嵌入相加
+    使用sin和cos函数生成位置编码，为序列中的每个位置提供位置信息
+    数学公式：
+    PE(pos, 2i) = sin(pos / 10000^(2i/d_model))
+    PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))
     """
     
-    def __init__(self, d_model, max_len=5000):
+    def __init__(self, d_model, max_len=5000, position_factor=10000, fast_model=True):
         super(PositionalEncoding, self).__init__()
-        # TODO: 实现位置编码逻辑
-        pass
+        
+        # 创建位置编码矩阵 [max_len, d_model]
+        pe = torch.zeros(max_len, d_model)
+        
+        # 创建位置索引 [max_len, 1]
+        # position = [0, 1, 2, ..., max_len-1]
+        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+        
+        # 计算div_term，用于10000^(2i/d_model)
+        if fast_model:
+            # 快速模式：使用exp(-2i*ln(10000)/d_model)避免数值不稳定
+            # div_term shape: [d_model//2]
+            div_term = torch.exp(torch.arange(0, d_model, 2, dtype=torch.float) * 
+                               (-math.log(position_factor) / d_model))
+        else:
+            # 标准模式：直接计算10000^(2i/d_model)
+            # div_term shape: [d_model//2]
+            div_term = torch.float_power(position_factor, 
+                                       torch.arange(0, d_model, 2, dtype=torch.float) / d_model)
+            div_term = torch.div(1, div_term)  # 取倒数
+        
+        # 对偶数维度应用sin函数 [max_len, d_model//2]
+        pe[:, 0::2] = torch.sin(position * div_term)
+        
+        # 对奇数维度应用cos函数 [max_len, d_model//2]
+        pe[:, 1::2] = torch.cos(position * div_term)
+        
+        # 调整维度 [max_len, d_model] -> [max_len, 1, d_model]
+        # 这样便于后续广播到 [seq_len, batch_size, d_model]
+        pe = pe.unsqueeze(0).transpose(0, 1)
+        
+        # 注册为buffer（不参与梯度更新，但会随模型一起保存）
+        self.register_buffer('pe', pe)
     
     def forward(self, x):
-        # TODO: 实现前向传播
-        pass
+        """
+        前向传播
+        
+        Args:
+            x: 输入张量 [seq_len, batch_size, d_model]
+        
+        Returns:
+            输出张量 [seq_len, batch_size, d_model]
+        """
+        # 输入: x [seq_len, batch_size, d_model]
+        # 位置编码: self.pe [max_len, 1, d_model]
+        # 取前seq_len个位置: self.pe[:x.size(0), :] [seq_len, 1, d_model]
+        # 广播相加: x + self.pe[:x.size(0), :] [seq_len, batch_size, d_model]
+        return x + self.pe[:x.size(0), :]
 
 
 class MultiHeadAttention(nn.Module):
