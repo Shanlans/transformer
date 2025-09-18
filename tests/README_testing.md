@@ -6,15 +6,14 @@
 tests/
 ├── functional/                    # 功能测试
 │   └── test_positional_encoding.py  # 位置编码测试（包含运行器）
-├── requirements_test.txt            # 测试依赖
 └── README_testing.md               # 测试说明
 ```
 
 ## 🚀 快速开始
 
-### 1. 安装测试依赖
+### 1. 安装项目依赖（包含测试依赖）
 ```bash
-pip install -r tests/requirements_test.txt
+pip install -r config/requirements.txt
 ```
 
 ### 2. 运行位置编码测试
