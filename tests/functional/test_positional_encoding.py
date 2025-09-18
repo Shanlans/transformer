@@ -169,10 +169,17 @@ def visualize_positional_encoding():
     ax4.grid(True)
     
     plt.tight_layout()
-    plt.savefig('positional_encoding_visualization.png', dpi=300, bbox_inches='tight')
+    
+    # 保存到tests目录下的visualizations文件夹
+    import os
+    vis_dir = os.path.join(os.path.dirname(__file__), '..', 'visualizations')
+    os.makedirs(vis_dir, exist_ok=True)
+    
+    save_path = os.path.join(vis_dir, 'positional_encoding_visualization.png')
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.show()
     
-    print("✅ 可视化完成，图片已保存为 'positional_encoding_visualization.png'\n")
+    print(f"✅ 可视化完成，图片已保存为 '{save_path}'\n")
 
 
 def visualize_positional_encoding_3d():
@@ -228,10 +235,17 @@ def visualize_positional_encoding_3d():
         ax3.annotate(str(i), (pos_2d[i, 0], pos_2d[i, 1]))
     
     plt.tight_layout()
-    plt.savefig('positional_encoding_3d_visualization.png', dpi=300, bbox_inches='tight')
+    
+    # 保存到tests目录下的visualizations文件夹
+    import os
+    vis_dir = os.path.join(os.path.dirname(__file__), '..', 'visualizations')
+    os.makedirs(vis_dir, exist_ok=True)
+    
+    save_path = os.path.join(vis_dir, 'positional_encoding_3d_visualization.png')
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.show()
     
-    print("✅ 3D可视化完成，图片已保存为 'positional_encoding_3d_visualization.png'\n")
+    print(f"✅ 3D可视化完成，图片已保存为 '{save_path}'\n")
 
 
 def test_positional_encoding_math_properties():

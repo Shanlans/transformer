@@ -6,6 +6,9 @@
 tests/
 ├── functional/                    # 功能测试
 │   └── test_positional_encoding.py  # 位置编码测试（包含运行器）
+├── visualizations/               # 可视化图片（自动创建）
+│   ├── positional_encoding_visualization.png
+│   └── positional_encoding_3d_visualization.png
 └── README_testing.md               # 测试说明
 ```
 
@@ -57,8 +60,10 @@ python tests/functional/test_positional_encoding.py
 ```
 
 ### 可视化输出
-- `positional_encoding_visualization.png` - 2D可视化
-- `positional_encoding_3d_visualization.png` - 3D可视化
+- `tests/visualizations/positional_encoding_visualization.png` - 2D可视化
+- `tests/visualizations/positional_encoding_3d_visualization.png` - 3D可视化
+
+**注意**: `visualizations` 文件夹会在运行测试时自动创建
 
 ## 🔧 自定义测试
 
