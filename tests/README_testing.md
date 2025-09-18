@@ -5,8 +5,7 @@
 ```
 tests/
 ├── functional/                    # 功能测试
-│   └── test_positional_encoding.py  # 位置编码测试
-├── run_positional_encoding_test.py  # 测试运行脚本
+│   └── test_positional_encoding.py  # 位置编码测试（包含运行器）
 ├── requirements_test.txt            # 测试依赖
 └── README_testing.md               # 测试说明
 ```
@@ -20,11 +19,8 @@ pip install -r tests/requirements_test.txt
 
 ### 2. 运行位置编码测试
 ```bash
-# 方法1：运行完整测试
+# 直接运行测试文件
 python tests/functional/test_positional_encoding.py
-
-# 方法2：使用测试运行器（推荐）
-python tests/run_positional_encoding_test.py
 ```
 
 ## 🧪 测试内容

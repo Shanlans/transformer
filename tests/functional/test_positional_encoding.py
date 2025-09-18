@@ -316,34 +316,74 @@ def benchmark_positional_encoding():
     print("✅ 性能测试完成\n")
 
 
+def run_basic_tests():
+    """运行基础测试（不需要可视化依赖）"""
+    print("🧪 运行基础功能测试...")
+    
+    try:
+        # 运行基础测试
+        test_positional_encoding_basic()
+        test_positional_encoding_different_lengths()
+        test_positional_encoding_parameters()
+        test_positional_encoding_math_properties()
+        benchmark_positional_encoding()
+        
+        print("✅ 基础测试全部通过！")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 测试失败: {e}")
+        return False
+
+def run_visualization_tests():
+    """运行可视化测试"""
+    print("🎨 运行可视化测试...")
+    
+    try:
+        # 检查依赖
+        try:
+            import matplotlib.pyplot as plt
+            import numpy as np
+            from sklearn.decomposition import PCA
+        except ImportError as e:
+            print(f"⚠️ 缺少可视化依赖: {e}")
+            print("请安装: pip install matplotlib scikit-learn")
+            return False
+        
+        # 运行可视化测试
+        visualize_positional_encoding()
+        visualize_positional_encoding_3d()
+        
+        print("✅ 可视化测试完成！")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 可视化测试失败: {e}")
+        return False
+
 def main():
     """运行所有测试"""
     print("🚀 开始位置编码功能测试\n")
     
-    # 基础功能测试
-    test_positional_encoding_basic()
+    # 运行基础测试
+    basic_success = run_basic_tests()
     
-    # 不同长度测试
-    test_positional_encoding_different_lengths()
+    if basic_success:
+        print("\n" + "="*50)
+        
+        # 询问是否运行可视化测试
+        try:
+            response = input("是否运行可视化测试？(y/n): ").lower().strip()
+            if response in ['y', 'yes', '是']:
+                run_visualization_tests()
+            else:
+                print("跳过可视化测试")
+        except KeyboardInterrupt:
+            print("\n测试被用户中断")
+        except:
+            print("无法获取用户输入，跳过可视化测试")
     
-    # 参数设置测试
-    test_positional_encoding_parameters()
-    
-    # 数学性质测试
-    test_positional_encoding_math_properties()
-    
-    # 性能测试
-    benchmark_positional_encoding()
-    
-    # 可视化测试
-    try:
-        visualize_positional_encoding()
-        visualize_positional_encoding_3d()
-    except ImportError as e:
-        print(f"⚠️ 可视化需要额外依赖: {e}")
-        print("请安装: pip install matplotlib scikit-learn")
-    
-    print("🎉 所有测试完成！")
+    print("\n🎉 测试完成！")
 
 
 if __name__ == "__main__":
