@@ -115,11 +115,11 @@ class MultiHeadAttention(nn.Module):
             Q: Query矩阵 [seq_len, n_heads, batch_size, d_k]
             K: Key矩阵 [seq_len, n_heads, batch_size, d_k]
             V: Value矩阵 [seq_len, n_heads, batch_size, d_v]
-            mask: 掩码 [seq_len, n_heads, batch_size, seq_len] 或 None
+            mask: 掩码 [batch_size, n_heads, seq_len, seq_len] 或 None
         
         Returns:
             output: 注意力输出 [seq_len, n_heads, batch_size, d_v]
-            attention_weights: 注意力权重 [seq_len, n_heads, batch_size, seq_len]
+            attention_weights: 注意力权重 [batch_size, n_heads, seq_len, seq_len]
         """
         d_k = Q.size(-1)
         
@@ -164,7 +164,7 @@ class MultiHeadAttention(nn.Module):
             query: 查询矩阵 [seq_len, batch_size, d_model]
             key: 键矩阵 [seq_len, batch_size, d_model]
             value: 值矩阵 [seq_len, batch_size, d_model]
-            mask: 掩码 [batch_size, 1, seq_len, seq_len] 或 None
+            mask: 掩码 [batch_size, n_heads, seq_len, seq_len] 或 None
         
         Returns:
             输出张量 [seq_len, batch_size, d_model]
