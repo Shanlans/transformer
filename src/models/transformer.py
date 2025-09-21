@@ -112,18 +112,28 @@ class MultiHeadAttention(nn.Module):
         缩放点积注意力机制
         
         Args:
-            Q: Query矩阵 [batch_size, n_heads, seq_len, d_k]
-            K: Key矩阵 [batch_size, n_heads, seq_len, d_k]
-            V: Value矩阵 [batch_size, n_heads, seq_len, d_v]
-            mask: 掩码 [batch_size, 1, seq_len, seq_len] 或 None
+            Q: Query矩阵 [seq_len, n_heads, batch_size, d_k]
+            K: Key矩阵 [seq_len, n_heads, batch_size, d_k]
+            V: Value矩阵 [seq_len, n_heads, batch_size, d_v]
+            mask: 掩码 [seq_len, n_heads, batch_size, seq_len] 或 None
         
         Returns:
-            output: 注意力输出 [batch_size, n_heads, seq_len, d_v]
-            attention_weights: 注意力权重 [batch_size, n_heads, seq_len, seq_len]
+            output: 注意力输出 [seq_len, n_heads, batch_size, d_v]
+            attention_weights: 注意力权重 [seq_len, n_heads, batch_size, seq_len]
         """
         d_k = Q.size(-1)
         
         # 计算注意力分数
+        # Q: [seq_len, n_heads, batch_size, d_k]
+        # K: [seq_len, n_heads, batch_size, d_k]
+        # 我们需要 [seq_len, n_heads, batch_size, seq_len] 的注意力分数
+        # 所以需要重新排列维度，让每个位置对每个位置计算注意力
+        
+        # 重新排列为 [batch_size, n_heads, seq_len, d_k]
+        Q = Q.permute(2, 1, 0, 3)  # [batch_size, n_heads, seq_len, d_k]
+        K = K.permute(2, 1, 0, 3)  # [batch_size, n_heads, seq_len, d_k]
+        V = V.permute(2, 1, 0, 3)  # [batch_size, n_heads, seq_len, d_v]
+        
         scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(d_k)
         # [batch_size, n_heads, seq_len, seq_len]
         
@@ -140,6 +150,9 @@ class MultiHeadAttention(nn.Module):
         # 计算加权输出
         output = torch.matmul(attention_weights, V)
         # [batch_size, n_heads, seq_len, d_v]
+        
+        # 转回原来的维度顺序 [seq_len, n_heads, batch_size, d_v]
+        output = output.permute(2, 1, 0, 3)  # [seq_len, n_heads, batch_size, d_v]
         
         return output, attention_weights
     
@@ -165,7 +178,7 @@ class MultiHeadAttention(nn.Module):
         
         # 2. 重塑为多头
         Q = Q.view(seq_len, batch_size, self.n_heads, self.d_k).transpose(1, 2)
-        # [seq_len, batch_size, n_heads, d_k] -> [seq_len, n_heads, batch_size, d_k]
+        # [seq_len, batch_size, n_heads, d_k] -> [seq_len, n_heads，batch_size, d_k]
         K = K.view(seq_len, batch_size, self.n_heads, self.d_k).transpose(1, 2)
         V = V.view(seq_len, batch_size, self.n_heads, self.d_v).transpose(1, 2)
         

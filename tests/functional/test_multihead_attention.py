@@ -123,7 +123,10 @@ def test_multihead_attention_mask():
     x = torch.randn(seq_len, batch_size, d_model)
     
     # 创建padding mask（假设前5个位置是padding）
-    mask = torch.ones(batch_size, 1, seq_len, seq_len)
+    # 注意：在我们的实现中，注意力计算是在 [batch_size, n_heads, seq_len, d_k] 维度上进行的
+    # 注意力分数是 [batch_size, n_heads, seq_len, seq_len] 维度
+    # 所以掩码应该是 [batch_size, n_heads, seq_len, seq_len] 维度
+    mask = torch.ones(batch_size, n_heads, seq_len, seq_len)
     mask[:, :, :, :5] = 0  # 将前5个位置设为0
     
     # 测试带mask的前向传播
