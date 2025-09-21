@@ -5,10 +5,13 @@
 ```
 tests/
 ├── functional/                    # 功能测试
-│   └── test_positional_encoding.py  # 位置编码测试（包含运行器）
+│   ├── test_positional_encoding.py      # 位置编码测试（包含运行器）
+│   └── test_multihead_attention.py      # 多头注意力测试（包含运行器）
 ├── visualizations/               # 可视化图片（自动创建）
 │   ├── positional_encoding_visualization.png
-│   └── positional_encoding_3d_visualization.png
+│   ├── positional_encoding_3d_visualization.png
+│   ├── multihead_attention_visualization.png
+│   └── multihead_attention_heads_visualization.png
 └── README_testing.md               # 测试说明
 ```
 
@@ -19,10 +22,18 @@ tests/
 pip install -r config/requirements.txt
 ```
 
-### 2. 运行位置编码测试
+### 2. 运行测试
+
+#### 位置编码测试
 ```bash
 # 直接运行测试文件
 python tests/functional/test_positional_encoding.py
+```
+
+#### 多头注意力测试
+```bash
+# 直接运行测试文件
+python tests/functional/test_multihead_attention.py
 ```
 
 ## 🧪 测试内容
@@ -60,8 +71,10 @@ python tests/functional/test_positional_encoding.py
 ```
 
 ### 可视化输出
-- `tests/visualizations/positional_encoding_visualization.png` - 2D可视化
-- `tests/visualizations/positional_encoding_3d_visualization.png` - 3D可视化
+- `tests/visualizations/positional_encoding_visualization.png` - 位置编码2D可视化
+- `tests/visualizations/positional_encoding_3d_visualization.png` - 位置编码3D可视化
+- `tests/visualizations/multihead_attention_visualization.png` - 多头注意力权重可视化
+- `tests/visualizations/multihead_attention_heads_visualization.png` - 多头注意力各头可视化
 
 **注意**: `visualizations` 文件夹会在运行测试时自动创建
 

@@ -84,23 +84,109 @@ class MultiHeadAttention(nn.Module):
     """
     多头注意力机制
     
-    TODO: 实现多头注意力
-    - 线性变换生成Q, K, V
-    - 分割成多个头
-    - 计算注意力分数
-    - 应用mask（如果需要）
-    - 合并多头输出
+    数学公式：
+    MultiHead(Q, K, V) = Concat(head_1, ..., head_h)W^O
+    其中 head_i = Attention(QW_i^Q, KW_i^K, VW_i^V)
     """
     
     def __init__(self, d_model, n_heads, dropout=0.1):
         super(MultiHeadAttention, self).__init__()
-        # TODO: 实现多头注意力逻辑
-        pass
+        assert d_model % n_heads == 0, "d_model must be divisible by n_heads"
+        
+        self.d_model = d_model
+        self.n_heads = n_heads
+        self.d_k = d_model // n_heads
+        self.d_v = d_model // n_heads
+        
+        # 线性投影层
+        self.W_Q = nn.Linear(d_model, d_model)
+        self.W_K = nn.Linear(d_model, d_model)
+        self.W_V = nn.Linear(d_model, d_model)
+        self.W_O = nn.Linear(d_model, d_model)
+        
+        # Dropout层
+        self.dropout = nn.Dropout(dropout)
+    
+    def scaled_dot_product_attention(self, Q, K, V, mask=None):
+        """
+        缩放点积注意力机制
+        
+        Args:
+            Q: Query矩阵 [batch_size, n_heads, seq_len, d_k]
+            K: Key矩阵 [batch_size, n_heads, seq_len, d_k]
+            V: Value矩阵 [batch_size, n_heads, seq_len, d_v]
+            mask: 掩码 [batch_size, 1, seq_len, seq_len] 或 None
+        
+        Returns:
+            output: 注意力输出 [batch_size, n_heads, seq_len, d_v]
+            attention_weights: 注意力权重 [batch_size, n_heads, seq_len, seq_len]
+        """
+        d_k = Q.size(-1)
+        
+        # 计算注意力分数
+        scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(d_k)
+        # [batch_size, n_heads, seq_len, seq_len]
+        
+        # 应用掩码（如果有）
+        if mask is not None:
+            scores = scores.masked_fill(mask == 0, -1e9)
+        
+        # 应用softmax
+        attention_weights = F.softmax(scores, dim=-1)
+        
+        # 应用dropout
+        attention_weights = self.dropout(attention_weights)
+        
+        # 计算加权输出
+        output = torch.matmul(attention_weights, V)
+        # [batch_size, n_heads, seq_len, d_v]
+        
+        return output, attention_weights
     
     def forward(self, query, key, value, mask=None):
-        # TODO: 实现前向传播
-        pass
-
+        """
+        前向传播
+        
+        Args:
+            query: 查询矩阵 [seq_len, batch_size, d_model]
+            key: 键矩阵 [seq_len, batch_size, d_model]
+            value: 值矩阵 [seq_len, batch_size, d_model]
+            mask: 掩码 [batch_size, 1, seq_len, seq_len] 或 None
+        
+        Returns:
+            输出张量 [seq_len, batch_size, d_model]
+        """
+        seq_len, batch_size, d_model = query.size()
+        
+        # 1. 线性变换
+        Q = self.W_Q(query)  # [seq_len, batch_size, d_model]
+        K = self.W_K(key)    # [seq_len, batch_size, d_model]
+        V = self.W_V(value)  # [seq_len, batch_size, d_model]
+        
+        # 2. 重塑为多头
+        Q = Q.view(seq_len, batch_size, self.n_heads, self.d_k).transpose(1, 2)
+        # [seq_len, batch_size, n_heads, d_k] -> [seq_len, n_heads, batch_size, d_k]
+        K = K.view(seq_len, batch_size, self.n_heads, self.d_k).transpose(1, 2)
+        V = V.view(seq_len, batch_size, self.n_heads, self.d_v).transpose(1, 2)
+        
+        # 3. 计算注意力
+        attention_output, attention_weights = self.scaled_dot_product_attention(
+            Q, K, V, mask
+        )
+        # attention_output: [seq_len, n_heads, batch_size, d_v]
+        
+        # 4. 合并多头
+        attention_output = attention_output.transpose(1, 2).contiguous().view(
+            seq_len, batch_size, d_model
+        )
+        # [seq_len, n_heads, batch_size, d_v] -> [seq_len, batch_size, d_model]
+        
+        # 5. 输出投影
+        output = self.W_O(attention_output)
+        # [seq_len, batch_size, d_model]
+        
+        return output
+        
 
 class FeedForward(nn.Module):
     """
