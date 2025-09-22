@@ -192,42 +192,126 @@ class FeedForward(nn.Module):
     """
     前馈网络
     
-    TODO: 实现前馈网络
-    - 两个线性层
-    - ReLU激活函数
-    - Dropout正则化
+    数学公式：FFN(x) = max(0, xW₁ + b₁)W₂ + b₂
+    
+    网络结构：
+    输入 x: [batch_size, seq_len, d_model]
+        ↓
+    线性层1: [batch_size, seq_len, d_model] → [batch_size, seq_len, d_ff]
+        ↓
+    ReLU激活: max(0, x)
+        ↓
+    Dropout: 随机置零部分神经元
+        ↓
+    线性层2: [batch_size, seq_len, d_ff] → [batch_size, seq_len, d_model]
+        ↓
+    输出 y: [batch_size, seq_len, d_model]
     """
     
     def __init__(self, d_model, d_ff, dropout=0.1):
         super(FeedForward, self).__init__()
-        # TODO: 实现前馈网络逻辑
-        pass
-    
+        # 第一个线性层：d_model → d_ff
+        self.W_1 = nn.Linear(d_model, d_ff)
+        # 第二个线性层：d_ff → d_model
+        self.W_2 = nn.Linear(d_ff, d_model)
+        # Dropout正则化
+        self.dropout = nn.Dropout(dropout)
+
     def forward(self, x):
-        # TODO: 实现前向传播
-        pass
+        """
+        前向传播
+        
+        Args:
+            x: 输入张量 [batch_size, seq_len, d_model]
+        
+        Returns:
+            输出张量 [batch_size, seq_len, d_model]
+        """
+        # 第一个线性变换
+        x = self.W_1(x)  # [batch_size, seq_len, d_model] → [batch_size, seq_len, d_ff]
+        
+        # ReLU激活函数
+        x = F.relu(x)    # 引入非线性
+        
+        # Dropout正则化
+        x = self.dropout(x)
+        
+        # 第二个线性变换
+        x = self.W_2(x)  # [batch_size, seq_len, d_ff] → [batch_size, seq_len, d_model]
+        
+        return x
 
 
 class EncoderLayer(nn.Module):
     """
     编码器层
     
-    TODO: 实现编码器层
-    - 自注意力机制
-    - 残差连接
-    - 层归一化
-    - 前馈网络
+    数学公式：
+    LayerNorm(x + MultiHeadAttention(x))
+    LayerNorm(x + FeedForward(x))
+    
+    网络结构：
+    输入 x: [batch_size, seq_len, d_model]
+        ↓
+    自注意力: MultiHeadAttention(x, x, x)
+        ↓
+    残差连接: x + MultiHeadAttention(x, x, x)
+        ↓
+    层归一化: LayerNorm(x + MultiHeadAttention(x, x, x))
+        ↓
+    前馈网络: FeedForward(x')
+        ↓
+    残差连接: x' + FeedForward(x')
+        ↓
+    层归一化: LayerNorm(x' + FeedForward(x'))
+        ↓
+    输出 y: [batch_size, seq_len, d_model]
     """
     
     def __init__(self, d_model, n_heads, d_ff, dropout=0.1):
         super(EncoderLayer, self).__init__()
-        # TODO: 实现编码器层逻辑
-        pass
-    
-    def forward(self, x, mask=None):
-        # TODO: 实现前向传播
-        pass
+        # 自注意力子层
+        self.self_attention = MultiHeadAttention(d_model, n_heads, dropout)
+        # 前馈网络子层
+        self.feed_forward = FeedForward(d_model, d_ff, dropout)
+        # 层归一化层
+        self.norm1 = nn.LayerNorm(d_model)  # 自注意力后的层归一化
+        self.norm2 = nn.LayerNorm(d_model)  # 前馈网络后的层归一化
+        # Dropout正则化
+        self.dropout = nn.Dropout(dropout)
 
+    def forward(self, x, mask=None):
+        """
+        前向传播
+        
+        Args:
+            x: 输入张量 [batch_size, seq_len, d_model]
+            mask: 注意力掩码 [batch_size, n_heads, seq_len, seq_len] 或 None
+        
+        Returns:
+            输出张量 [batch_size, seq_len, d_model]
+        """
+        # 第一个子层：自注意力 + 残差连接 + 层归一化
+        # 1. 计算自注意力
+        attn_output = self.self_attention(x, x, x, mask)  # [batch_size, seq_len, d_model]
+        
+        # 2. 残差连接 + Dropout
+        x = x + self.dropout(attn_output)  # [batch_size, seq_len, d_model]
+        
+        # 3. 层归一化
+        x = self.norm1(x)  # [batch_size, seq_len, d_model]
+        
+        # 第二个子层：前馈网络 + 残差连接 + 层归一化
+        # 1. 计算前馈网络
+        ff_output = self.feed_forward(x)  # [batch_size, seq_len, d_model]
+        
+        # 2. 残差连接 + Dropout
+        x = x + self.dropout(ff_output)  # [batch_size, seq_len, d_model]
+        
+        # 3. 层归一化
+        x = self.norm2(x)  # [batch_size, seq_len, d_model]
+        
+        return x
 
 class DecoderLayer(nn.Module):
     """
