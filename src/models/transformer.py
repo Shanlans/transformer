@@ -56,9 +56,9 @@ class PositionalEncoding(nn.Module):
         # 对奇数维度应用cos函数 [max_len, d_model//2]
         pe[:, 1::2] = torch.cos(position * div_term)
         
-        # 调整维度 [max_len, d_model] -> [max_len, 1, d_model]
-        # 这样便于后续广播到 [seq_len, batch_size, d_model]
-        pe = pe.unsqueeze(0).transpose(0, 1)
+        # 调整维度 [max_len, d_model] -> [1, max_len, d_model]
+        # 这样便于后续广播到 [batch_size, seq_len, d_model]
+        pe = pe.unsqueeze(0)
         
         # 注册为buffer（不参与梯度更新，但会随模型一起保存）
         self.register_buffer('pe', pe)
@@ -68,16 +68,16 @@ class PositionalEncoding(nn.Module):
         前向传播
         
         Args:
-            x: 输入张量 [seq_len, batch_size, d_model]
+            x: 输入张量 [batch_size, seq_len, d_model]
         
         Returns:
-            输出张量 [seq_len, batch_size, d_model]
+            输出张量 [batch_size, seq_len, d_model]
         """
-        # 输入: x [seq_len, batch_size, d_model]
-        # 位置编码: self.pe [max_len, 1, d_model]
-        # 取前seq_len个位置: self.pe[:x.size(0), :] [seq_len, 1, d_model]
-        # 广播相加: x + self.pe[:x.size(0), :] [seq_len, batch_size, d_model]
-        return x + self.pe[:x.size(0), :]
+        # 输入: x [batch_size, seq_len, d_model]
+        # 位置编码: self.pe [1, max_len, d_model]
+        # 取前seq_len个位置: self.pe[:, :x.size(1), :] [1, seq_len, d_model]
+        # 广播相加: x + self.pe[:, :x.size(1), :] [batch_size, seq_len, d_model]
+        return x + self.pe[:, :x.size(1), :]
 
 
 class MultiHeadAttention(nn.Module):
@@ -425,13 +425,16 @@ class Transformer(nn.Module):
     """
     完整的Transformer模型
     
-    TODO: 实现完整Transformer
-    - 词嵌入层
-    - 位置编码
-    - 编码器堆叠
-    - 解码器堆叠
-    - 输出投影层
-    - 创建mask的辅助方法
+    网络结构：
+    输入序列 → 词嵌入 → 位置编码 → 编码器堆叠 → 编码器输出
+    目标序列 → 词嵌入 → 位置编码 → 解码器堆叠(使用编码器输出) → 输出投影 → 概率分布
+    
+    数学公式：
+    - 词嵌入: Embedding(x) * sqrt(d_model)
+    - 位置编码: x + PositionalEncoding(x)
+    - 编码器: LayerNorm(x + MultiHeadAttention(x)) + LayerNorm(x + FeedForward(x))
+    - 解码器: 三个子层，每层都有残差连接和层归一化
+    - 输出: Linear(d_model → tgt_vocab_size)
     """
     
     def __init__(self, src_vocab_size, tgt_vocab_size, d_model=512, n_heads=8, 
@@ -439,18 +442,130 @@ class Transformer(nn.Module):
                  max_len=5000, dropout=0.1):
         super(Transformer, self).__init__()
         
+        # 保存参数
+        self.d_model = d_model
+        self.n_heads = n_heads
+        
+        # 词嵌入层
+        self.src_embedding = nn.Embedding(src_vocab_size, d_model)
+        self.tgt_embedding = nn.Embedding(tgt_vocab_size, d_model)
+        
+        # 位置编码层
+        self.positional_encoding = PositionalEncoding(d_model, max_len)
+        
+        # 编码器堆叠
+        self.encoder = nn.ModuleList([
+            EncoderLayer(d_model, n_heads, d_ff, dropout) 
+            for _ in range(n_encoder_layers)
+        ])
+        
+        # 解码器堆叠
+        self.decoder = nn.ModuleList([
+            DecoderLayer(d_model, n_heads, d_ff, dropout) 
+            for _ in range(n_decoder_layers)
+        ])
+        
+        # 输出投影层
+        self.output_projection = nn.Linear(d_model, tgt_vocab_size)
+        
+        # 初始化参数
+        self.init_parameters()
+    
+    def init_parameters(self):
+        """初始化模型参数"""
+        # 词嵌入层使用Xavier初始化
+        nn.init.xavier_uniform_(self.src_embedding.weight)
+        nn.init.xavier_uniform_(self.tgt_embedding.weight)
+        
+        # 输出投影层使用Xavier初始化
+        nn.init.xavier_uniform_(self.output_projection.weight)
+        nn.init.zeros_(self.output_projection.bias)
     
     def create_padding_mask(self, seq, pad_idx=0):
-        # TODO: 实现padding mask
-        pass
+        """
+        创建padding mask
+        
+        Args:
+            seq: 输入序列 [batch_size, seq_len]
+            pad_idx: padding token的索引
+        
+        Returns:
+            mask: [batch_size, 1, 1, seq_len] - 用于多头注意力
+        """
+        # 创建padding mask: [batch_size, seq_len]
+        mask = (seq != pad_idx)
+        
+        # 扩展维度以适配多头注意力: [batch_size, 1, 1, seq_len]
+        mask = mask.unsqueeze(1).unsqueeze(2)
+        
+        return mask
     
     def create_look_ahead_mask(self, size):
-        # TODO: 实现look-ahead mask
-        pass
+        """
+        创建look-ahead mask (causal mask)
+        
+        Args:
+            size: 序列长度
+        
+        Returns:
+            mask: [size, size] - 下三角矩阵
+        """
+        # 创建上三角矩阵，然后取反得到下三角矩阵
+        mask = torch.triu(torch.ones(size, size), diagonal=1)
+        return mask == 0  # 下三角为True，上三角为False
     
     def forward(self, src, tgt, src_mask=None, tgt_mask=None):
-        # TODO: 实现前向传播
-        pass
+        """
+        前向传播
+        
+        Args:
+            src: 源序列 [batch_size, src_seq_len]
+            tgt: 目标序列 [batch_size, tgt_seq_len]
+            src_mask: 源序列mask [batch_size, 1, 1, src_seq_len] 或 None
+            tgt_mask: 目标序列mask [batch_size, 1, 1, tgt_seq_len] 或 None
+        
+        Returns:
+            输出概率分布 [batch_size, tgt_seq_len, tgt_vocab_size]
+        """
+        # 1. 创建mask（如果未提供）
+        if src_mask is None:
+            src_mask = self.create_padding_mask(src, 0)
+        if tgt_mask is None:
+            tgt_mask = self.create_look_ahead_mask(tgt.size(1))
+            # 扩展维度以适配多头注意力
+            tgt_mask = tgt_mask.unsqueeze(0).unsqueeze(0)  # [1, 1, tgt_seq_len, tgt_seq_len]
+        
+        # 2. 词嵌入 + 缩放
+        src_embedded = self.src_embedding(src) * math.sqrt(self.d_model)
+        tgt_embedded = self.tgt_embedding(tgt) * math.sqrt(self.d_model)
+        # [batch_size, src_seq_len, d_model], [batch_size, tgt_seq_len, d_model]
+        
+        # 3. 位置编码
+        # PositionalEncoding现在直接接受[batch_size, seq_len, d_model]格式
+        src_encoded = self.positional_encoding(src_embedded)
+        tgt_encoded = self.positional_encoding(tgt_embedded)
+        # [batch_size, src_seq_len, d_model], [batch_size, tgt_seq_len, d_model]
+        
+        # 4. 编码器堆叠
+        encoder_output = src_encoded
+        for encoder_layer in self.encoder:
+            encoder_output = encoder_layer(encoder_output, src_mask)
+        # [batch_size, src_seq_len, d_model]
+        
+        # 5. 解码器堆叠
+        decoder_output = tgt_encoded
+        for decoder_layer in self.decoder:
+            decoder_output = decoder_layer(
+                decoder_output, encoder_output, src_mask, tgt_mask
+            )
+        # [batch_size, tgt_seq_len, d_model]
+        
+        # 6. 输出投影
+        output = self.output_projection(decoder_output)
+        # [batch_size, tgt_seq_len, tgt_vocab_size]
+        
+        return output   
+
 
 
 def create_model(src_vocab_size, tgt_vocab_size, d_model=512, n_heads=8, 
