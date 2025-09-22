@@ -317,21 +317,108 @@ class DecoderLayer(nn.Module):
     """
     解码器层
     
-    TODO: 实现解码器层
-    - 自注意力机制（带mask）
-    - 交叉注意力机制
-    - 前馈网络
-    - 残差连接和层归一化
+    数学公式：
+    LayerNorm(x + MaskedMultiHeadAttention(x, tgt_mask))
+    LayerNorm(x + MultiHeadAttention(x, encoder_output, encoder_output, src_mask))
+    LayerNorm(x + FeedForward(x))
+    
+    网络结构：
+    输入 x: [batch_size, tgt_seq_len, d_model]
+        ↓
+    掩码自注意力: MaskedMultiHeadAttention(x, x, x, tgt_mask)
+        ↓
+    残差连接: x + MaskedMultiHeadAttention(...)
+        ↓
+    层归一化: LayerNorm(x + MaskedMultiHeadAttention(...))
+        ↓
+    交叉注意力: MultiHeadAttention(x, encoder_output, encoder_output, src_mask)
+        ↓
+    残差连接: x + MultiHeadAttention(...)
+        ↓
+    层归一化: LayerNorm(x + MultiHeadAttention(...))
+        ↓
+    前馈网络: FeedForward(x)
+        ↓
+    残差连接: x + FeedForward(x)
+        ↓
+    层归一化: LayerNorm(x + FeedForward(x))
+        ↓
+    输出 y: [batch_size, tgt_seq_len, d_model]
+    
+    Mask说明：
+    - tgt_mask: [batch_size, n_heads, tgt_seq_len, tgt_seq_len]
+      * 防止解码器看到未来位置（causal mask）
+      * 1表示允许注意力，0表示禁止注意力
+      * 下三角矩阵，上三角为0
+    - src_mask: [batch_size, n_heads, tgt_seq_len, src_seq_len]
+      * 忽略编码器输入的padding位置
+      * 1表示有效位置，0表示padding位置
     """
     
     def __init__(self, d_model, n_heads, d_ff, dropout=0.1):
         super(DecoderLayer, self).__init__()
-        # TODO: 实现解码器层逻辑
-        pass
-    
+        # 掩码自注意力子层（防止看到未来信息）
+        self.self_attention = MultiHeadAttention(d_model, n_heads, dropout)
+        # 交叉注意力子层（关注编码器输出）
+        self.cross_attention = MultiHeadAttention(d_model, n_heads, dropout)
+        # 前馈网络子层
+        self.feed_forward = FeedForward(d_model, d_ff, dropout)
+        # 层归一化层
+        self.norm1 = nn.LayerNorm(d_model)  # 掩码自注意力后的层归一化
+        self.norm2 = nn.LayerNorm(d_model)  # 交叉注意力后的层归一化
+        self.norm3 = nn.LayerNorm(d_model)  # 前馈网络后的层归一化
+        # Dropout正则化
+        self.dropout = nn.Dropout(dropout)
+
     def forward(self, x, encoder_output, src_mask=None, tgt_mask=None):
-        # TODO: 实现前向传播
-        pass
+        """
+        前向传播
+        
+        Args:
+            x: 解码器输入 [batch_size, tgt_seq_len, d_model]
+            encoder_output: 编码器输出 [batch_size, src_seq_len, d_model]
+            src_mask: 源序列掩码 [batch_size, n_heads, tgt_seq_len, src_seq_len] 或 None
+                    用于忽略编码器输入的padding位置
+            tgt_mask: 目标序列掩码 [batch_size, n_heads, tgt_seq_len, tgt_seq_len] 或 None
+                    用于防止解码器看到未来位置（causal mask）
+        
+        Returns:
+            输出张量 [batch_size, tgt_seq_len, d_model]
+        """
+        # 第一个子层：掩码自注意力 + 残差连接 + 层归一化
+        # 1. 计算掩码自注意力（防止看到未来信息）
+        # query=key=value=x，使用tgt_mask防止看到未来位置
+        attn_output = self.self_attention(x, x, x, tgt_mask)  # [batch_size, tgt_seq_len, d_model]
+        
+        # 2. 残差连接 + Dropout
+        x = x + self.dropout(attn_output)  # [batch_size, tgt_seq_len, d_model]
+        
+        # 3. 层归一化
+        x = self.norm1(x)  # [batch_size, tgt_seq_len, d_model]
+        
+        # 第二个子层：交叉注意力 + 残差连接 + 层归一化
+        # 1. 计算交叉注意力（关注编码器输出）
+        # query=x，key=value=encoder_output，使用src_mask忽略padding
+        cross_attn_output = self.cross_attention(x, encoder_output, encoder_output, src_mask)
+        # [batch_size, tgt_seq_len, d_model]
+        
+        # 2. 残差连接 + Dropout
+        x = x + self.dropout(cross_attn_output)  # [batch_size, tgt_seq_len, d_model]
+        
+        # 3. 层归一化
+        x = self.norm2(x)  # [batch_size, tgt_seq_len, d_model]
+        
+        # 第三个子层：前馈网络 + 残差连接 + 层归一化
+        # 1. 计算前馈网络
+        ff_output = self.feed_forward(x)  # [batch_size, tgt_seq_len, d_model]
+        
+        # 2. 残差连接 + Dropout
+        x = x + self.dropout(ff_output)  # [batch_size, tgt_seq_len, d_model]
+        
+        # 3. 层归一化
+        x = self.norm3(x)  # [batch_size, tgt_seq_len, d_model]
+        
+        return x
 
 
 class Transformer(nn.Module):
@@ -351,8 +438,7 @@ class Transformer(nn.Module):
                  n_encoder_layers=6, n_decoder_layers=6, d_ff=2048, 
                  max_len=5000, dropout=0.1):
         super(Transformer, self).__init__()
-        # TODO: 实现完整Transformer逻辑
-        pass
+        
     
     def create_padding_mask(self, seq, pad_idx=0):
         # TODO: 实现padding mask
@@ -396,6 +482,38 @@ def create_model(src_vocab_size, tgt_vocab_size, d_model=512, n_heads=8,
         dropout=dropout
     )
 
+
+# ============================================================================
+# Mask详细说明
+# ============================================================================
+"""
+Transformer中的两种主要Mask类型：
+
+1. Causal Mask (tgt_mask) - 目标序列掩码
+   形状: [batch_size, n_heads, tgt_seq_len, tgt_seq_len]
+   作用: 防止解码器在生成第i个词时看到第i+1个及以后的词
+   示例: 对于序列长度4
+   [[1, 0, 0, 0],
+    [1, 1, 0, 0],
+    [1, 1, 1, 0],
+    [1, 1, 1, 1]]
+   上三角为0，下三角为1
+
+2. Padding Mask (src_mask) - 源序列掩码
+   形状: [batch_size, n_heads, tgt_seq_len, src_seq_len]
+   作用: 忽略编码器输入中的padding位置
+   示例: 对于源序列长度5，其中位置3,4是padding
+   [[1, 1, 1, 0, 0],
+    [1, 1, 1, 0, 0],
+    [1, 1, 1, 0, 0],
+    [1, 1, 1, 0, 0]]
+   1表示有效位置，0表示padding位置
+
+3. 在注意力计算中的应用：
+   - 将mask为0的位置的注意力分数设为-1e9
+   - 经过softmax后，这些位置的注意力权重接近0
+   - 从而有效忽略被mask的位置
+"""
 
 if __name__ == "__main__":
     print("🧪 Transformer模型框架已创建")
