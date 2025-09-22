@@ -26,9 +26,9 @@ def test_multihead_attention_basic():
     mha = MultiHeadAttention(d_model, n_heads)
     
     # 创建测试输入
-    seq_len = 50
     batch_size = 32
-    x = torch.randn(seq_len, batch_size, d_model)
+    seq_len = 50
+    x = torch.randn(batch_size, seq_len, d_model)
     
     print(f"Input shape: {x.shape}")
     print(f"Number of heads: {n_heads}")
@@ -47,7 +47,7 @@ def test_multihead_attention_basic():
     print("✅ Non-zero output test passed")
     
     # 验证不同输入产生不同输出
-    x2 = torch.randn(seq_len, batch_size, d_model)
+    x2 = torch.randn(batch_size, seq_len, d_model)
     output2 = mha(x2, x2, x2)
     assert not torch.allclose(output, output2), "Different inputs should produce different outputs"
     print("✅ Different input test passed")
@@ -68,10 +68,10 @@ def test_multihead_attention_different_lengths():
     batch_size = 16
     
     for seq_len in test_lengths:
-        x = torch.randn(seq_len, batch_size, d_model)
+        x = torch.randn(batch_size, seq_len, d_model)
         output = mha(x, x, x)
         
-        assert output.shape == (seq_len, batch_size, d_model), \
+        assert output.shape == (batch_size, seq_len, d_model), \
             f"Sequence length {seq_len} test failed"
         print(f"✅ Sequence length {seq_len} test passed")
     
@@ -101,10 +101,10 @@ def test_multihead_attention_parameters():
     dropout_rates = [0.0, 0.1, 0.5]
     for dropout_rate in dropout_rates:
         mha = MultiHeadAttention(d_model, 8, dropout=dropout_rate)
-        x = torch.randn(seq_len, batch_size, d_model)
+        x = torch.randn(batch_size, seq_len, d_model)
         output = mha(x, x, x)
         
-        assert output.shape == (seq_len, batch_size, d_model), \
+        assert output.shape == (batch_size, seq_len, d_model), \
             f"dropout={dropout_rate} test failed"
         print(f"✅ dropout={dropout_rate} test passed")
     
@@ -119,8 +119,8 @@ def test_multihead_attention_mask():
     n_heads = 4
     mha = MultiHeadAttention(d_model, n_heads)
     
-    seq_len, batch_size = 10, 4
-    x = torch.randn(seq_len, batch_size, d_model)
+    batch_size, seq_len = 4, 10
+    x = torch.randn(batch_size, seq_len, d_model)
     
     # 创建padding mask（假设前5个位置是padding）
     # 注意：在我们的实现中，注意力计算是在 [batch_size, n_heads, seq_len, d_k] 维度上进行的
@@ -131,7 +131,7 @@ def test_multihead_attention_mask():
     
     # 测试带mask的前向传播
     output = mha(x, x, x, mask=mask)
-    assert output.shape == (seq_len, batch_size, d_model), "Mask test failed"
+    assert output.shape == (batch_size, seq_len, d_model), "Mask test failed"
     print("✅ Mask test passed")
     
     print("🎉 All mask tests passed!\n")
@@ -145,12 +145,12 @@ def test_multihead_attention_math_properties():
     n_heads = 4
     mha = MultiHeadAttention(d_model, n_heads)
     
-    seq_len, batch_size = 20, 8
-    x = torch.randn(seq_len, batch_size, d_model)
+    batch_size, seq_len = 8, 20
+    x = torch.randn(batch_size, seq_len, d_model)
     
     # 1. 测试线性性（近似）
-    x1 = torch.randn(seq_len, batch_size, d_model)
-    x2 = torch.randn(seq_len, batch_size, d_model)
+    x1 = torch.randn(batch_size, seq_len, d_model)
+    x2 = torch.randn(batch_size, seq_len, d_model)
     alpha, beta = 0.5, 0.5
     
     output1 = mha(x1, x1, x1)
@@ -192,14 +192,14 @@ def benchmark_multihead_attention():
     
     # 测试不同批次大小和序列长度
     test_cases = [
-        (50, 32),   # (seq_len, batch_size)
-        (100, 64),
-        (200, 32),
-        (500, 16),
+        (32, 50),   # (batch_size, seq_len)
+        (64, 100),
+        (32, 200),
+        (16, 500),
     ]
     
-    for seq_len, batch_size in test_cases:
-        x = torch.randn(seq_len, batch_size, d_model)
+    for batch_size, seq_len in test_cases:
+        x = torch.randn(batch_size, seq_len, d_model)
         
         # 预热
         for _ in range(10):
@@ -212,7 +212,7 @@ def benchmark_multihead_attention():
         end_time = time.time()
         
         avg_time = (end_time - start_time) / 100
-        print(f"Seq len {seq_len}, Batch size {batch_size}: "
+        print(f"Batch size {batch_size}, Seq len {seq_len}: "
               f"Avg time {avg_time*1000:.2f}ms")
     
     print("✅ Performance test completed\n")
@@ -226,8 +226,8 @@ def visualize_attention_weights():
     n_heads = 4
     mha = MultiHeadAttention(d_model, n_heads)
     
-    seq_len, batch_size = 20, 1
-    x = torch.randn(seq_len, batch_size, d_model)
+    batch_size, seq_len = 1, 20
+    x = torch.randn(batch_size, seq_len, d_model)
     
     # 获取注意力权重（需要修改forward方法返回权重）
     # 这里我们创建一个简化的可视化
@@ -238,8 +238,8 @@ def visualize_attention_weights():
         V = mha.W_V(x)
         
         # 重塑为多头
-        Q = Q.view(seq_len, batch_size, n_heads, d_model // n_heads).transpose(1, 2)
-        K = K.view(seq_len, batch_size, n_heads, d_model // n_heads).transpose(1, 2)
+        Q = Q.view(batch_size, seq_len, n_heads, d_model // n_heads).transpose(1, 2)
+        K = K.view(batch_size, seq_len, n_heads, d_model // n_heads).transpose(1, 2)
         
         # 计算注意力分数
         scores = torch.matmul(Q, K.transpose(-2, -1)) / np.sqrt(d_model // n_heads)
@@ -313,8 +313,8 @@ def visualize_attention_heads():
     n_heads = 8
     mha = MultiHeadAttention(d_model, n_heads)
     
-    seq_len, batch_size = 15, 1
-    x = torch.randn(seq_len, batch_size, d_model)
+    batch_size, seq_len = 1, 15
+    x = torch.randn(batch_size, seq_len, d_model)
     
     with torch.no_grad():
         # 计算Q, K
@@ -322,8 +322,8 @@ def visualize_attention_heads():
         K = mha.W_K(x)
         
         # 重塑为多头
-        Q = Q.view(seq_len, batch_size, n_heads, d_model // n_heads).transpose(1, 2)
-        K = K.view(seq_len, batch_size, n_heads, d_model // n_heads).transpose(1, 2)
+        Q = Q.view(batch_size, seq_len, n_heads, d_model // n_heads).transpose(1, 2)
+        K = K.view(batch_size, seq_len, n_heads, d_model // n_heads).transpose(1, 2)
         
         # 计算注意力分数
         scores = torch.matmul(Q, K.transpose(-2, -1)) / np.sqrt(d_model // n_heads)

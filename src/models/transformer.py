@@ -112,28 +112,18 @@ class MultiHeadAttention(nn.Module):
         缩放点积注意力机制
         
         Args:
-            Q: Query矩阵 [seq_len, n_heads, batch_size, d_k]
-            K: Key矩阵 [seq_len, n_heads, batch_size, d_k]
-            V: Value矩阵 [seq_len, n_heads, batch_size, d_v]
+            Q: Query矩阵 [batch_size, n_heads, seq_len, d_k]
+            K: Key矩阵 [batch_size, n_heads, seq_len, d_k]
+            V: Value矩阵 [batch_size, n_heads, seq_len, d_v]
             mask: 掩码 [batch_size, n_heads, seq_len, seq_len] 或 None
         
         Returns:
-            output: 注意力输出 [seq_len, n_heads, batch_size, d_v]
+            output: 注意力输出 [batch_size, n_heads, seq_len, d_v]
             attention_weights: 注意力权重 [batch_size, n_heads, seq_len, seq_len]
         """
         d_k = Q.size(-1)
         
         # 计算注意力分数
-        # Q: [seq_len, n_heads, batch_size, d_k]
-        # K: [seq_len, n_heads, batch_size, d_k]
-        # 我们需要 [seq_len, n_heads, batch_size, seq_len] 的注意力分数
-        # 所以需要重新排列维度，让每个位置对每个位置计算注意力
-        
-        # 重新排列为 [batch_size, n_heads, seq_len, d_k]
-        Q = Q.permute(2, 1, 0, 3)  # [batch_size, n_heads, seq_len, d_k]
-        K = K.permute(2, 1, 0, 3)  # [batch_size, n_heads, seq_len, d_k]
-        V = V.permute(2, 1, 0, 3)  # [batch_size, n_heads, seq_len, d_v]
-        
         scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(d_k)
         # [batch_size, n_heads, seq_len, seq_len]
         
@@ -151,9 +141,6 @@ class MultiHeadAttention(nn.Module):
         output = torch.matmul(attention_weights, V)
         # [batch_size, n_heads, seq_len, d_v]
         
-        # 转回原来的维度顺序 [seq_len, n_heads, batch_size, d_v]
-        output = output.permute(2, 1, 0, 3)  # [seq_len, n_heads, batch_size, d_v]
-        
         return output, attention_weights
     
     def forward(self, query, key, value, mask=None):
@@ -161,42 +148,42 @@ class MultiHeadAttention(nn.Module):
         前向传播
         
         Args:
-            query: 查询矩阵 [seq_len, batch_size, d_model]
-            key: 键矩阵 [seq_len, batch_size, d_model]
-            value: 值矩阵 [seq_len, batch_size, d_model]
+            query: 查询矩阵 [batch_size, seq_len, d_model]
+            key: 键矩阵 [batch_size, seq_len, d_model]
+            value: 值矩阵 [batch_size, seq_len, d_model]
             mask: 掩码 [batch_size, n_heads, seq_len, seq_len] 或 None
         
         Returns:
-            输出张量 [seq_len, batch_size, d_model]
+            输出张量 [batch_size, seq_len, d_model]
         """
-        seq_len, batch_size, d_model = query.size()
+        batch_size, seq_len, d_model = query.size()
         
         # 1. 线性变换
-        Q = self.W_Q(query)  # [seq_len, batch_size, d_model]
-        K = self.W_K(key)    # [seq_len, batch_size, d_model]
-        V = self.W_V(value)  # [seq_len, batch_size, d_model]
+        Q = self.W_Q(query)  # [batch_size, seq_len, d_model]
+        K = self.W_K(key)    # [batch_size, seq_len, d_model]
+        V = self.W_V(value)  # [batch_size, seq_len, d_model]
         
         # 2. 重塑为多头
-        Q = Q.view(seq_len, batch_size, self.n_heads, self.d_k).transpose(1, 2)
-        # [seq_len, batch_size, n_heads, d_k] -> [seq_len, n_heads，batch_size, d_k]
-        K = K.view(seq_len, batch_size, self.n_heads, self.d_k).transpose(1, 2)
-        V = V.view(seq_len, batch_size, self.n_heads, self.d_v).transpose(1, 2)
+        Q = Q.view(batch_size, seq_len, self.n_heads, self.d_k).transpose(1, 2)
+        # [batch_size, seq_len, n_heads, d_k] -> [batch_size, n_heads, seq_len, d_k]
+        K = K.view(batch_size, seq_len, self.n_heads, self.d_k).transpose(1, 2)
+        V = V.view(batch_size, seq_len, self.n_heads, self.d_v).transpose(1, 2)
         
         # 3. 计算注意力
         attention_output, attention_weights = self.scaled_dot_product_attention(
             Q, K, V, mask
         )
-        # attention_output: [seq_len, n_heads, batch_size, d_v]
+        # attention_output: [batch_size, n_heads, seq_len, d_v]
         
         # 4. 合并多头
         attention_output = attention_output.transpose(1, 2).contiguous().view(
-            seq_len, batch_size, d_model
+            batch_size, seq_len, d_model
         )
-        # [seq_len, n_heads, batch_size, d_v] -> [seq_len, batch_size, d_model]
+        # [batch_size, n_heads, seq_len, d_v] -> [batch_size, seq_len, d_model]
         
         # 5. 输出投影
         output = self.W_O(attention_output)
-        # [seq_len, batch_size, d_model]
+        # [batch_size, seq_len, d_model]
         
         return output
         
