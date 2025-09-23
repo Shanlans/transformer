@@ -1,0 +1,202 @@
+[
+  {
+    "src": "A man is standing in front of a building",
+    "tgt": "Ein Mann steht vor einem Gebäude"
+  },
+  {
+    "src": "A woman is walking on the street",
+    "tgt": "Eine Frau geht auf der Straße"
+  },
+  {
+    "src": "A child is playing in the park",
+    "tgt": "Ein Kind spielt im Park"
+  },
+  {
+    "src": "A group of people are talking",
+    "tgt": "Eine Gruppe von Menschen redet"
+  },
+  {
+    "src": "A young couple is holding hands",
+    "tgt": "Ein junges Paar hält Hände"
+  },
+  {
+    "src": "A dog is running in the field",
+    "tgt": "Ein Hund läuft auf dem Feld"
+  },
+  {
+    "src": "A cat is sleeping on the sofa",
+    "tgt": "Eine Katze schläft auf dem Sofa"
+  },
+  {
+    "src": "A bird is flying in the sky",
+    "tgt": "Ein Vogel fliegt am Himmel"
+  },
+  {
+    "src": "A horse is standing in the stable",
+    "tgt": "Ein Pferd steht im Stall"
+  },
+  {
+    "src": "A fish is swimming in the water",
+    "tgt": "Ein Fisch schwimmt im Wasser"
+  },
+  {
+    "src": "A car is driving on the road",
+    "tgt": "Ein Auto fährt auf der Straße"
+  },
+  {
+    "src": "A bus is stopping at the station",
+    "tgt": "Ein Bus hält an der Station"
+  },
+  {
+    "src": "A train is leaving the platform",
+    "tgt": "Ein Zug verlässt den Bahnsteig"
+  },
+  {
+    "src": "A plane is flying over the city",
+    "tgt": "Ein Flugzeug fliegt über die Stadt"
+  },
+  {
+    "src": "A bicycle is parked near the tree",
+    "tgt": "Ein Fahrrad ist neben dem Baum geparkt"
+  },
+  {
+    "src": "The sun is shining brightly",
+    "tgt": "Die Sonne scheint hell"
+  },
+  {
+    "src": "It is raining heavily outside",
+    "tgt": "Es regnet stark draußen"
+  },
+  {
+    "src": "The wind is blowing the leaves",
+    "tgt": "Der Wind bläst die Blätter"
+  },
+  {
+    "src": "Snow is falling from the sky",
+    "tgt": "Schnee fällt vom Himmel"
+  },
+  {
+    "src": "The moon is visible in the night",
+    "tgt": "Der Mond ist in der Nacht sichtbar"
+  },
+  {
+    "src": "A table is set for dinner",
+    "tgt": "Ein Tisch ist für das Abendessen gedeckt"
+  },
+  {
+    "src": "A book is lying on the desk",
+    "tgt": "Ein Buch liegt auf dem Schreibtisch"
+  },
+  {
+    "src": "A lamp is lighting the room",
+    "tgt": "Eine Lampe beleuchtet den Raum"
+  },
+  {
+    "src": "A chair is placed near the window",
+    "tgt": "Ein Stuhl steht am Fenster"
+  },
+  {
+    "src": "A picture is hanging on the wall",
+    "tgt": "Ein Bild hängt an der Wand"
+  },
+  {
+    "src": "A pizza is being prepared",
+    "tgt": "Eine Pizza wird zubereitet"
+  },
+  {
+    "src": "Fresh fruits are on the table",
+    "tgt": "Frische Früchte sind auf dem Tisch"
+  },
+  {
+    "src": "A cup of coffee is steaming",
+    "tgt": "Eine Tasse Kaffee dampft"
+  },
+  {
+    "src": "Bread is baking in the oven",
+    "tgt": "Brot backt im Ofen"
+  },
+  {
+    "src": "A salad is being served",
+    "tgt": "Ein Salat wird serviert"
+  },
+  {
+    "src": "People are dancing at the party",
+    "tgt": "Menschen tanzen auf der Party"
+  },
+  {
+    "src": "A game is being played",
+    "tgt": "Ein Spiel wird gespielt"
+  },
+  {
+    "src": "Music is playing in the background",
+    "tgt": "Musik spielt im Hintergrund"
+  },
+  {
+    "src": "A movie is being watched",
+    "tgt": "Ein Film wird angeschaut"
+  },
+  {
+    "src": "A song is being sung",
+    "tgt": "Ein Lied wird gesungen"
+  },
+  {
+    "src": "A church is standing in the center",
+    "tgt": "Eine Kirche steht im Zentrum"
+  },
+  {
+    "src": "A school is located on the hill",
+    "tgt": "Eine Schule liegt auf dem Hügel"
+  },
+  {
+    "src": "A hospital is near the station",
+    "tgt": "Ein Krankenhaus ist nahe der Station"
+  },
+  {
+    "src": "A library is open for visitors",
+    "tgt": "Eine Bibliothek ist für Besucher geöffnet"
+  },
+  {
+    "src": "A museum is showing new exhibits",
+    "tgt": "Ein Museum zeigt neue Ausstellungen"
+  },
+  {
+    "src": "It is morning and people are waking up",
+    "tgt": "Es ist Morgen und Menschen wachen auf"
+  },
+  {
+    "src": "It is noon and the sun is high",
+    "tgt": "Es ist Mittag und die Sonne steht hoch"
+  },
+  {
+    "src": "It is evening and lights are turning on",
+    "tgt": "Es ist Abend und Lichter gehen an"
+  },
+  {
+    "src": "It is night and stars are visible",
+    "tgt": "Es ist Nacht und Sterne sind sichtbar"
+  },
+  {
+    "src": "It is weekend and people are relaxing",
+    "tgt": "Es ist Wochenende und Menschen entspannen"
+  },
+  {
+    "src": "Everyone is happy and smiling",
+    "tgt": "Alle sind glücklich und lächeln"
+  },
+  {
+    "src": "The atmosphere is peaceful and quiet",
+    "tgt": "Die Atmosphäre ist friedlich und ruhig"
+  },
+  {
+    "src": "People are busy with their work",
+    "tgt": "Menschen sind mit ihrer Arbeit beschäftigt"
+  },
+  {
+    "src": "The mood is cheerful and lively",
+    "tgt": "Die Stimmung ist fröhlich und lebhaft"
+  },
+  {
+    "src": "Everyone is excited about the event",
+    "tgt": "Alle sind aufgeregt über das Ereignis"
+  }
+]
