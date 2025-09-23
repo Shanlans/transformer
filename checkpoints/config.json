@@ -1,0 +1,23 @@
+{
+  "data_path": "data/train.json",
+  "max_length": 20,
+  "train_split": 0.8,
+  "d_model": 128,
+  "n_heads": 4,
+  "n_encoder_layers": 2,
+  "n_decoder_layers": 2,
+  "d_ff": 2048,
+  "dropout": 0.1,
+  "batch_size": 8,
+  "epochs": 2,
+  "lr": 0.0001,
+  "weight_decay": 0.01,
+  "gradient_clip_norm": 1.0,
+  "scheduler_type": "none",
+  "loss_type": "masked",
+  "early_stopping_patience": 10,
+  "device": "cpu",
+  "save_dir": "checkpoints",
+  "num_workers": 0,
+  "resume": null
+}
