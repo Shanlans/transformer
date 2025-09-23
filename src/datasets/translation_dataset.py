@@ -41,11 +41,11 @@ class TranslationDataset(Dataset):
     
     def __init__(
         self,
-        src_data: List[str] = None,
-        tgt_data: List[str] = None,
-        src_file: str = None,
-        tgt_file: str = None,
-        json_file: str = None,
+        src_data: Optional[List[str]] = None,
+        tgt_data: Optional[List[str]] = None,
+        src_file: Optional[str] = None,
+        tgt_file: Optional[str] = None,
+        json_file: Optional[str] = None,
         max_length: int = 20,  # Based on Multi30k characteristics, 20 words is sufficient
         min_freq: int = 1,     # Minimum word frequency threshold
         pad_token: str = "<PAD>",
@@ -101,6 +101,7 @@ class TranslationDataset(Dataset):
         else:
             raise ValueError("请提供源语言和目标语言数据或文件路径")
 
+        assert self.src_Data is not None and self.tgt_Data is not None, "Data must be loaded"
         assert len(self.src_Data) == len(self.tgt_Data), "源语言和目标语言数据长度不一致"
         self.src_vocab = self._build_vocab(self.src_Data)
         self.tgt_vocab = self._build_vocab(self.tgt_Data)
@@ -275,6 +276,7 @@ class TranslationDataset(Dataset):
             Number of samples in the dataset
         """
         # Return the number of samples in the dataset
+        assert self.src_Data is not None and self.tgt_Data is not None, "Data must be loaded"
         assert len(self.src_Data) == len(self.tgt_Data), "源语言和目标语言数据长度不一致"
         return len(self.src_Data)
     
@@ -302,6 +304,7 @@ class TranslationDataset(Dataset):
         """
         # Get source and target sentences, encode and pad them
         # Create target input sequence with SOS token
+        assert self.src_Data is not None and self.tgt_Data is not None, "Data must be loaded"
         src_sentence = self.src_Data[idx]
         tgt_sentence = self.tgt_Data[idx]
         src_encoded = self._tokenize_and_encode(src_sentence, self.src_vocab)
@@ -489,8 +492,8 @@ if __name__ == "__main__":
     print(f"Target output: {sample['tgt_output']}")
     
     # Test decoding
-    decoded_src = dataset.decode_sequence(sample['src'], is_target=False)
-    decoded_tgt = dataset.decode_sequence(sample['tgt_output'], is_target=True)
+    decoded_src = dataset.decode_sequence(sample['src'], is_target=False)  # type: ignore
+    decoded_tgt = dataset.decode_sequence(sample['tgt_output'], is_target=True)  # type: ignore
     print(f"\\nDecoding results:")
     print(f"Source decoded: {decoded_src}")
     print(f"Target decoded: {decoded_tgt}")
