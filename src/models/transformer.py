@@ -1,14 +1,16 @@
 """
-Transformer模型框架
-基于论文 "Attention Is All You Need" (Vaswani et al., 2017)
+Transformer Model Implementation
+Based on "Attention Is All You Need" (Vaswani et al., 2017)
 
-TODO: 请根据指导逐步实现以下组件：
-1. 位置编码 (PositionalEncoding)
-2. 多头注意力机制 (MultiHeadAttention)
-3. 前馈网络 (FeedForward)
-4. 编码器层 (EncoderLayer)
-5. 解码器层 (DecoderLayer)
-6. 完整Transformer模型 (Transformer)
+This module implements the complete Transformer architecture including:
+1. Positional Encoding (PositionalEncoding)
+2. Multi-Head Attention Mechanism (MultiHeadAttention)
+3. Feed-Forward Network (FeedForward)
+4. Encoder Layer (EncoderLayer)
+5. Decoder Layer (DecoderLayer)
+6. Complete Transformer Model (Transformer)
+
+All components are fully implemented with proper initialization and documentation.
 """
 
 import torch
@@ -19,32 +21,49 @@ import math
 
 class PositionalEncoding(nn.Module):
     """
-    位置编码层
+    Positional Encoding Layer
     
-    使用sin和cos函数生成位置编码，为序列中的每个位置提供位置信息
-    数学公式：
+    Generates positional encodings using sine and cosine functions to provide
+    position information for each position in the sequence.
+    
+    Mathematical formula:
     PE(pos, 2i) = sin(pos / 10000^(2i/d_model))
     PE(pos, 2i+1) = cos(pos / 10000^(2i/d_model))
+    
+    Args:
+        d_model: Model dimension
+        max_len: Maximum sequence length
+        position_factor: Factor for position encoding (default: 10000)
+        fast_model: Whether to use fast computation mode
     """
     
     def __init__(self, d_model, max_len=5000, position_factor=10000, fast_model=True):
+        """
+        Initialize positional encoding layer.
+        
+        Args:
+            d_model: Model dimension
+            max_len: Maximum sequence length
+            position_factor: Factor for position encoding (default: 10000)
+            fast_model: Whether to use fast computation mode
+        """
         super(PositionalEncoding, self).__init__()
         
-        # 创建位置编码矩阵 [max_len, d_model]
+        # Create positional encoding matrix [max_len, d_model]
         pe = torch.zeros(max_len, d_model)
         
-        # 创建位置索引 [max_len, 1]
+        # Create position indices [max_len, 1]
         # position = [0, 1, 2, ..., max_len-1]
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
         
-        # 计算div_term，用于10000^(2i/d_model)
+        # Calculate div_term for 10000^(2i/d_model)
         if fast_model:
-            # 快速模式：使用exp(-2i*ln(10000)/d_model)避免数值不稳定
+            # Fast mode: use exp(-2i*ln(10000)/d_model) to avoid numerical instability
             # div_term shape: [d_model//2]
             div_term = torch.exp(torch.arange(0, d_model, 2, dtype=torch.float) * 
                                (-math.log(position_factor) / d_model))
         else:
-            # 标准模式：直接计算10000^(2i/d_model)
+            # Standard mode: directly calculate 10000^(2i/d_model)
             # div_term shape: [d_model//2]
             div_term = torch.float_power(position_factor, 
                                        torch.arange(0, d_model, 2, dtype=torch.float) / d_model)
@@ -65,31 +84,46 @@ class PositionalEncoding(nn.Module):
     
     def forward(self, x):
         """
-        前向传播
+        Forward pass of positional encoding.
         
         Args:
-            x: 输入张量 [batch_size, seq_len, d_model]
+            x: Input tensor [batch_size, seq_len, d_model]
         
         Returns:
-            输出张量 [batch_size, seq_len, d_model]
+            Output tensor with positional encoding added [batch_size, seq_len, d_model]
         """
-        # 输入: x [batch_size, seq_len, d_model]
-        # 位置编码: self.pe [1, max_len, d_model]
-        # 取前seq_len个位置: self.pe[:, :x.size(1), :] [1, seq_len, d_model]
-        # 广播相加: x + self.pe[:, :x.size(1), :] [batch_size, seq_len, d_model]
+        # Input: x [batch_size, seq_len, d_model]
+        # Positional encoding: self.pe [1, max_len, d_model]
+        # Take first seq_len positions: self.pe[:, :x.size(1), :] [1, seq_len, d_model]
+        # Broadcasting addition: x + self.pe[:, :x.size(1), :] [batch_size, seq_len, d_model]
         return x + self.pe[:, :x.size(1), :]
 
 
 class MultiHeadAttention(nn.Module):
     """
-    多头注意力机制
+    Multi-Head Attention Mechanism
     
-    数学公式：
+    Implements the multi-head attention mechanism as described in the Transformer paper.
+    
+    Mathematical formula:
     MultiHead(Q, K, V) = Concat(head_1, ..., head_h)W^O
-    其中 head_i = Attention(QW_i^Q, KW_i^K, VW_i^V)
+    where head_i = Attention(QW_i^Q, KW_i^K, VW_i^V)
+    
+    Args:
+        d_model: Model dimension
+        n_heads: Number of attention heads
+        dropout: Dropout rate
     """
     
     def __init__(self, d_model, n_heads, dropout=0.1):
+        """
+        Initialize multi-head attention layer.
+        
+        Args:
+            d_model: Model dimension
+            n_heads: Number of attention heads
+            dropout: Dropout rate
+        """
         super(MultiHeadAttention, self).__init__()
         assert d_model % n_heads == 0, "d_model must be divisible by n_heads"
         
@@ -98,28 +132,28 @@ class MultiHeadAttention(nn.Module):
         self.d_k = d_model // n_heads
         self.d_v = d_model // n_heads
         
-        # 线性投影层
+        # Linear projection layers
         self.W_Q = nn.Linear(d_model, d_model)
         self.W_K = nn.Linear(d_model, d_model)
         self.W_V = nn.Linear(d_model, d_model)
         self.W_O = nn.Linear(d_model, d_model)
         
-        # Dropout层
+        # Dropout layer
         self.dropout = nn.Dropout(dropout)
     
     def scaled_dot_product_attention(self, Q, K, V, mask=None):
         """
-        缩放点积注意力机制
+        Scaled dot-product attention mechanism.
         
         Args:
-            Q: Query矩阵 [batch_size, n_heads, query_seq_len, d_k]
-            K: Key矩阵 [batch_size, n_heads, key_seq_len, d_k]
-            V: Value矩阵 [batch_size, n_heads, value_seq_len, d_v]
-            mask: 掩码 [batch_size, n_heads, query_seq_len, key_seq_len] 或 None
+            Q: Query matrix [batch_size, n_heads, query_seq_len, d_k]
+            K: Key matrix [batch_size, n_heads, key_seq_len, d_k]
+            V: Value matrix [batch_size, n_heads, value_seq_len, d_v]
+            mask: Attention mask [batch_size, n_heads, query_seq_len, key_seq_len] or None
         
         Returns:
-            output: 注意力输出 [batch_size, n_heads, query_seq_len, d_v]
-            attention_weights: 注意力权重 [batch_size, n_heads, query_seq_len, key_seq_len]
+            output: Attention output [batch_size, n_heads, query_seq_len, d_v]
+            attention_weights: Attention weights [batch_size, n_heads, query_seq_len, key_seq_len]
         """
         d_k = Q.size(-1)
         
@@ -145,16 +179,16 @@ class MultiHeadAttention(nn.Module):
     
     def forward(self, query, key, value, mask=None):
         """
-        前向传播
+        Forward pass of multi-head attention.
         
         Args:
-            query: 查询矩阵 [batch_size, query_seq_len, d_model]
-            key: 键矩阵 [batch_size, key_seq_len, d_model]
-            value: 值矩阵 [batch_size, value_seq_len, d_model]
-            mask: 掩码 [batch_size, n_heads, query_seq_len, key_seq_len] 或 None
+            query: Query matrix [batch_size, query_seq_len, d_model]
+            key: Key matrix [batch_size, key_seq_len, d_model]
+            value: Value matrix [batch_size, value_seq_len, d_model]
+            mask: Attention mask [batch_size, n_heads, query_seq_len, key_seq_len] or None
         
         Returns:
-            输出张量 [batch_size, query_seq_len, d_model]
+            Output tensor [batch_size, query_seq_len, d_model]
         """
         batch_size, query_seq_len, d_model = query.size()
         key_seq_len = key.size(1)
@@ -194,42 +228,57 @@ class MultiHeadAttention(nn.Module):
 
 class FeedForward(nn.Module):
     """
-    前馈网络
+    Feed-Forward Network
     
-    数学公式：FFN(x) = max(0, xW₁ + b₁)W₂ + b₂
+    Implements the position-wise feed-forward network as described in the Transformer paper.
     
-    网络结构：
-    输入 x: [batch_size, seq_len, d_model]
+    Mathematical formula: FFN(x) = max(0, xW₁ + b₁)W₂ + b₂
+    
+    Network structure:
+    Input x: [batch_size, seq_len, d_model]
         ↓
-    线性层1: [batch_size, seq_len, d_model] → [batch_size, seq_len, d_ff]
+    Linear layer 1: [batch_size, seq_len, d_model] → [batch_size, seq_len, d_ff]
         ↓
-    ReLU激活: max(0, x)
+    ReLU activation: max(0, x)
         ↓
-    Dropout: 随机置零部分神经元
+    Dropout: Randomly zero out some neurons
         ↓
-    线性层2: [batch_size, seq_len, d_ff] → [batch_size, seq_len, d_model]
+    Linear layer 2: [batch_size, seq_len, d_ff] → [batch_size, seq_len, d_model]
         ↓
-    输出 y: [batch_size, seq_len, d_model]
+    Output y: [batch_size, seq_len, d_model]
+    
+    Args:
+        d_model: Model dimension
+        d_ff: Feed-forward dimension
+        dropout: Dropout rate
     """
     
     def __init__(self, d_model, d_ff, dropout=0.1):
+        """
+        Initialize feed-forward network.
+        
+        Args:
+            d_model: Model dimension
+            d_ff: Feed-forward dimension
+            dropout: Dropout rate
+        """
         super(FeedForward, self).__init__()
-        # 第一个线性层：d_model → d_ff
+        # First linear layer: d_model → d_ff
         self.W_1 = nn.Linear(d_model, d_ff)
-        # 第二个线性层：d_ff → d_model
+        # Second linear layer: d_ff → d_model
         self.W_2 = nn.Linear(d_ff, d_model)
-        # Dropout正则化
+        # Dropout regularization
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
         """
-        前向传播
+        Forward pass of feed-forward network.
         
         Args:
-            x: 输入张量 [batch_size, seq_len, d_model]
+            x: Input tensor [batch_size, seq_len, d_model]
         
         Returns:
-            输出张量 [batch_size, seq_len, d_model]
+            Output tensor [batch_size, seq_len, d_model]
         """
         # 第一个线性变换
         x = self.W_1(x)  # [batch_size, seq_len, d_model] → [batch_size, seq_len, d_ff]
@@ -248,52 +297,69 @@ class FeedForward(nn.Module):
 
 class EncoderLayer(nn.Module):
     """
-    编码器层
+    Encoder Layer
     
-    数学公式：
+    Implements a single encoder layer with self-attention and feed-forward network.
+    
+    Mathematical formula:
     LayerNorm(x + MultiHeadAttention(x))
     LayerNorm(x + FeedForward(x))
     
-    网络结构：
-    输入 x: [batch_size, seq_len, d_model]
+    Network structure:
+    Input x: [batch_size, seq_len, d_model]
         ↓
-    自注意力: MultiHeadAttention(x, x, x)
+    Self-attention: MultiHeadAttention(x, x, x)
         ↓
-    残差连接: x + MultiHeadAttention(x, x, x)
+    Residual connection: x + MultiHeadAttention(x, x, x)
         ↓
-    层归一化: LayerNorm(x + MultiHeadAttention(x, x, x))
+    Layer normalization: LayerNorm(x + MultiHeadAttention(x, x, x))
         ↓
-    前馈网络: FeedForward(x')
+    Feed-forward network: FeedForward(x')
         ↓
-    残差连接: x' + FeedForward(x')
+    Residual connection: x' + FeedForward(x')
         ↓
-    层归一化: LayerNorm(x' + FeedForward(x'))
+    Layer normalization: LayerNorm(x' + FeedForward(x'))
         ↓
-    输出 y: [batch_size, seq_len, d_model]
+    Output y: [batch_size, seq_len, d_model]
+    
+    Args:
+        d_model: Model dimension
+        n_heads: Number of attention heads
+        d_ff: Feed-forward dimension
+        dropout: Dropout rate
     """
     
     def __init__(self, d_model, n_heads, d_ff, dropout=0.1):
+        """
+        Initialize encoder layer.
+        
+        Args:
+            d_model: Model dimension
+            n_heads: Number of attention heads
+            d_ff: Feed-forward dimension
+            dropout: Dropout rate
+        """
         super(EncoderLayer, self).__init__()
-        # 自注意力子层
+        # Self-attention sublayer
         self.self_attention = MultiHeadAttention(d_model, n_heads, dropout)
-        # 前馈网络子层
+        # Feed-forward sublayer
         self.feed_forward = FeedForward(d_model, d_ff, dropout)
-        # 层归一化层
-        self.norm1 = nn.LayerNorm(d_model)  # 自注意力后的层归一化
-        self.norm2 = nn.LayerNorm(d_model)  # 前馈网络后的层归一化
-        # Dropout正则化
+        # Layer normalization layers
+        self.norm1 = nn.LayerNorm(d_model)  # Layer norm after self-attention
+        self.norm2 = nn.LayerNorm(d_model)  # Layer norm after feed-forward
+        # Dropout regularization
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, mask=None):
         """
-        前向传播
+        Forward pass of encoder layer.
         
         Args:
-            x: 输入张量 [batch_size, seq_len, d_model]
-            mask: 注意力掩码 [batch_size, n_heads, seq_len, seq_len] 或 None
+            x: Input tensor [batch_size, seq_len, d_model]
+            mask: Attention mask [batch_size, n_heads, seq_len, seq_len] or None
         
         Returns:
-            输出张量 [batch_size, seq_len, d_model]
+            Output tensor [batch_size, seq_len, d_model]
         """
         # 第一个子层：自注意力 + 残差连接 + 层归一化
         # 1. 计算自注意力
@@ -319,37 +385,39 @@ class EncoderLayer(nn.Module):
 
 class DecoderLayer(nn.Module):
     """
-    解码器层
+    Decoder Layer
     
-    数学公式：
+    Implements a single decoder layer with masked self-attention, cross-attention, and feed-forward network.
+    
+    Mathematical formula:
     LayerNorm(x + MaskedMultiHeadAttention(x, tgt_mask))
     LayerNorm(x + MultiHeadAttention(x, encoder_output, encoder_output, src_mask))
     LayerNorm(x + FeedForward(x))
     
-    网络结构：
-    输入 x: [batch_size, tgt_seq_len, d_model]
+    Network structure:
+    Input x: [batch_size, tgt_seq_len, d_model]
         ↓
-    掩码自注意力: MaskedMultiHeadAttention(x, x, x, tgt_mask)
+    Masked self-attention: MaskedMultiHeadAttention(x, x, x, tgt_mask)
         ↓
-    残差连接: x + MaskedMultiHeadAttention(...)
+    Residual connection: x + MaskedMultiHeadAttention(...)
         ↓
-    层归一化: LayerNorm(x + MaskedMultiHeadAttention(...))
+    Layer normalization: LayerNorm(x + MaskedMultiHeadAttention(...))
         ↓
-    交叉注意力: MultiHeadAttention(x, encoder_output, encoder_output, src_mask)
+    Cross-attention: MultiHeadAttention(x, encoder_output, encoder_output, src_mask)
         ↓
-    残差连接: x + MultiHeadAttention(...)
+    Residual connection: x + MultiHeadAttention(...)
         ↓
-    层归一化: LayerNorm(x + MultiHeadAttention(...))
+    Layer normalization: LayerNorm(x + MultiHeadAttention(...))
         ↓
-    前馈网络: FeedForward(x)
+    Feed-forward network: FeedForward(x)
         ↓
-    残差连接: x + FeedForward(x)
+    Residual connection: x + FeedForward(x)
         ↓
-    层归一化: LayerNorm(x + FeedForward(x))
+    Layer normalization: LayerNorm(x + FeedForward(x))
         ↓
-    输出 y: [batch_size, tgt_seq_len, d_model]
+    Output y: [batch_size, tgt_seq_len, d_model]
     
-    Mask说明：
+    Mask explanation:
     - tgt_mask: [batch_size, n_heads, tgt_seq_len, tgt_seq_len]
       * 防止解码器看到未来位置（causal mask）
       * 1表示允许注意力，0表示禁止注意力
@@ -360,34 +428,43 @@ class DecoderLayer(nn.Module):
     """
     
     def __init__(self, d_model, n_heads, d_ff, dropout=0.1):
+        """
+        Initialize decoder layer.
+        
+        Args:
+            d_model: Model dimension
+            n_heads: Number of attention heads
+            d_ff: Feed-forward dimension
+            dropout: Dropout rate
+        """
         super(DecoderLayer, self).__init__()
-        # 掩码自注意力子层（防止看到未来信息）
+        # Masked self-attention sublayer (prevents seeing future information)
         self.self_attention = MultiHeadAttention(d_model, n_heads, dropout)
-        # 交叉注意力子层（关注编码器输出）
+        # Cross-attention sublayer (attends to encoder output)
         self.cross_attention = MultiHeadAttention(d_model, n_heads, dropout)
-        # 前馈网络子层
+        # Feed-forward sublayer
         self.feed_forward = FeedForward(d_model, d_ff, dropout)
-        # 层归一化层
-        self.norm1 = nn.LayerNorm(d_model)  # 掩码自注意力后的层归一化
-        self.norm2 = nn.LayerNorm(d_model)  # 交叉注意力后的层归一化
-        self.norm3 = nn.LayerNorm(d_model)  # 前馈网络后的层归一化
-        # Dropout正则化
+        # Layer normalization layers
+        self.norm1 = nn.LayerNorm(d_model)  # Layer norm after masked self-attention
+        self.norm2 = nn.LayerNorm(d_model)  # Layer norm after cross-attention
+        self.norm3 = nn.LayerNorm(d_model)  # Layer norm after feed-forward
+        # Dropout regularization
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, encoder_output, src_mask=None, tgt_mask=None):
         """
-        前向传播
+        Forward pass of decoder layer.
         
         Args:
-            x: 解码器输入 [batch_size, tgt_seq_len, d_model]
-            encoder_output: 编码器输出 [batch_size, src_seq_len, d_model]
-            src_mask: 源序列掩码 [batch_size, n_heads, tgt_seq_len, src_seq_len] 或 None
-                    用于忽略编码器输入的padding位置
-            tgt_mask: 目标序列掩码 [batch_size, n_heads, tgt_seq_len, tgt_seq_len] 或 None
-                    用于防止解码器看到未来位置（causal mask）
+            x: Decoder input [batch_size, tgt_seq_len, d_model]
+            encoder_output: Encoder output [batch_size, src_seq_len, d_model]
+            src_mask: Source sequence mask [batch_size, n_heads, tgt_seq_len, src_seq_len] or None
+                     Used to ignore padding positions in encoder input
+            tgt_mask: Target sequence mask [batch_size, n_heads, tgt_seq_len, tgt_seq_len] or None
+                     Used to prevent decoder from seeing future positions (causal mask)
         
         Returns:
-            输出张量 [batch_size, tgt_seq_len, d_model]
+            Output tensor [batch_size, tgt_seq_len, d_model]
         """
         # 第一个子层：掩码自注意力 + 残差连接 + 层归一化
         # 1. 计算掩码自注意力（防止看到未来信息）
@@ -427,26 +504,53 @@ class DecoderLayer(nn.Module):
 
 class Transformer(nn.Module):
     """
-    完整的Transformer模型
+    Complete Transformer Model
     
-    网络结构：
-    输入序列 → 词嵌入 → 位置编码 → 编码器堆叠 → 编码器输出
-    目标序列 → 词嵌入 → 位置编码 → 解码器堆叠(使用编码器输出) → 输出投影 → 概率分布
+    Implements the full Transformer architecture for sequence-to-sequence tasks.
     
-    数学公式：
-    - 词嵌入: Embedding(x) * sqrt(d_model)
-    - 位置编码: x + PositionalEncoding(x)
-    - 编码器: LayerNorm(x + MultiHeadAttention(x)) + LayerNorm(x + FeedForward(x))
-    - 解码器: 三个子层，每层都有残差连接和层归一化
-    - 输出: Linear(d_model → tgt_vocab_size)
+    Network structure:
+    Input sequence → Word embedding → Positional encoding → Encoder stack → Encoder output
+    Target sequence → Word embedding → Positional encoding → Decoder stack (using encoder output) → Output projection → Probability distribution
+    
+    Mathematical formula:
+    - Word embedding: Embedding(x) * sqrt(d_model)
+    - Positional encoding: x + PositionalEncoding(x)
+    - Encoder: LayerNorm(x + MultiHeadAttention(x)) + LayerNorm(x + FeedForward(x))
+    - Decoder: Three sublayers, each with residual connection and layer normalization
+    - Output: Linear(d_model → tgt_vocab_size)
+    
+    Args:
+        src_vocab_size: Source vocabulary size
+        tgt_vocab_size: Target vocabulary size
+        d_model: Model dimension
+        n_heads: Number of attention heads
+        n_encoder_layers: Number of encoder layers
+        n_decoder_layers: Number of decoder layers
+        d_ff: Feed-forward dimension
+        max_len: Maximum sequence length
+        dropout: Dropout rate
     """
     
     def __init__(self, src_vocab_size, tgt_vocab_size, d_model=512, n_heads=8, 
                  n_encoder_layers=6, n_decoder_layers=6, d_ff=2048, 
                  max_len=5000, dropout=0.1):
+        """
+        Initialize Transformer model.
+        
+        Args:
+            src_vocab_size: Source vocabulary size
+            tgt_vocab_size: Target vocabulary size
+            d_model: Model dimension
+            n_heads: Number of attention heads
+            n_encoder_layers: Number of encoder layers
+            n_decoder_layers: Number of decoder layers
+            d_ff: Feed-forward dimension
+            max_len: Maximum sequence length
+            dropout: Dropout rate
+        """
         super(Transformer, self).__init__()
         
-        # 保存参数
+        # Save parameters
         self.d_model = d_model
         self.n_heads = n_heads
         
@@ -476,60 +580,60 @@ class Transformer(nn.Module):
         self.init_parameters()
     
     def init_parameters(self):
-        """初始化模型参数"""
-        # 词嵌入层使用Xavier初始化
+        """Initialize model parameters with Xavier initialization."""
+        # Word embedding layers use Xavier initialization
         nn.init.xavier_uniform_(self.src_embedding.weight)
         nn.init.xavier_uniform_(self.tgt_embedding.weight)
         
-        # 输出投影层使用Xavier初始化
+        # Output projection layer uses Xavier initialization
         nn.init.xavier_uniform_(self.output_projection.weight)
         nn.init.zeros_(self.output_projection.bias)
     
     def create_padding_mask(self, seq, pad_idx=0):
         """
-        创建padding mask
+        Create padding mask for attention mechanism.
         
         Args:
-            seq: 输入序列 [batch_size, seq_len]
-            pad_idx: padding token的索引
+            seq: Input sequence [batch_size, seq_len]
+            pad_idx: Index of padding token
         
         Returns:
-            mask: [batch_size, 1, 1, seq_len] - 用于多头注意力
+            mask: [batch_size, 1, 1, seq_len] - For multi-head attention
         """
-        # 创建padding mask: [batch_size, seq_len]
+        # Create padding mask: [batch_size, seq_len]
         mask = (seq != pad_idx)
         
-        # 扩展维度以适配多头注意力: [batch_size, 1, 1, seq_len]
+        # Expand dimensions for multi-head attention: [batch_size, 1, 1, seq_len]
         mask = mask.unsqueeze(1).unsqueeze(2)
         
         return mask
     
     def create_look_ahead_mask(self, size):
         """
-        创建look-ahead mask (causal mask)
+        Create look-ahead mask (causal mask) for decoder.
         
         Args:
-            size: 序列长度
+            size: Sequence length
         
         Returns:
-            mask: [size, size] - 下三角矩阵
+            mask: [size, size] - Lower triangular matrix
         """
-        # 创建上三角矩阵，然后取反得到下三角矩阵
+        # Create upper triangular matrix, then invert to get lower triangular matrix
         mask = torch.triu(torch.ones(size, size), diagonal=1)
-        return mask == 0  # 下三角为True，上三角为False
+        return mask == 0  # Lower triangle is True, upper triangle is False
     
     def forward(self, src, tgt, src_mask=None, tgt_mask=None):
         """
-        前向传播
+        Forward pass of Transformer model.
         
         Args:
-            src: 源序列 [batch_size, src_seq_len]
-            tgt: 目标序列 [batch_size, tgt_seq_len]
-            src_mask: 源序列mask [batch_size, 1, 1, src_seq_len] 或 None
-            tgt_mask: 目标序列mask [batch_size, 1, 1, tgt_seq_len] 或 None
+            src: Source sequence [batch_size, src_seq_len]
+            tgt: Target sequence [batch_size, tgt_seq_len]
+            src_mask: Source sequence mask [batch_size, 1, 1, src_seq_len] or None
+            tgt_mask: Target sequence mask [batch_size, 1, 1, tgt_seq_len] or None
         
         Returns:
-            输出概率分布 [batch_size, tgt_seq_len, tgt_vocab_size]
+            Output probability distribution [batch_size, tgt_seq_len, tgt_vocab_size]
         """
         # 1. 创建mask（如果未提供）
         if src_mask is None:

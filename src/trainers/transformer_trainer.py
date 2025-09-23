@@ -121,9 +121,9 @@ class TransformerTrainer:
         if scheduler_type == "none":
             return None
         elif scheduler_type == "step":
-            return optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.5)
+            return optim.lr_scheduler.StepLR(self.optimizer, step_size=10, gamma=0.5)  # type: ignore
         elif scheduler_type == "cosine":
-            return optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=100)
+            return optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=100)  # type: ignore
         else:
             raise ValueError(f"Unknown scheduler type: {scheduler_type}")
     
