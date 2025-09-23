@@ -77,13 +77,25 @@ tests/visualizations/
 *.tmp
 *.temp
 
-# 测试输出文件
+# Checkpoint files and directories
+checkpoints/
+checkpoint_*/
+run_*/
+*_checkpoint.pt
+*_model.pt
+*_best.pt
+*_final.pt
+*_metadata.json
+training_history.json
+config.json
+
+# Test output files
 test_model.pt
 transformer_model.pt
 transformer_full.pt
 transformer_model_screen.pt
 
-# 可视化输出文件
+# Visualization output files
 transformer_structure.png
 transformer_structure_screen.png
 transformer_architecture.png
