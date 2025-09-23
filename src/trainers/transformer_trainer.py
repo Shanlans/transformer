@@ -17,6 +17,7 @@ import sys
 # Add src directory to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils.loss_functions import create_loss_function
+from utils.checkpoint_manager import CheckpointManager
 
 
 class TransformerTrainer:
@@ -72,6 +73,15 @@ class TransformerTrainer:
         self.device = torch.device(device)
         self.gradient_clip_norm = gradient_clip_norm
         self.save_dir = save_dir
+        
+        # Initialize checkpoint manager
+        self.checkpoint_manager = CheckpointManager(
+            base_dir=save_dir,
+            max_checkpoints=10  # Keep last 10 checkpoints per run
+        )
+        
+        # Create run directory
+        self.run_dir = self.checkpoint_manager.create_run_directory()
         
         # Move model to device
         self.model.to(self.device)
@@ -283,7 +293,17 @@ class TransformerTrainer:
                 patience_counter = 0
                 
                 if save_best_only:
-                    self.save_model(os.path.join(self.save_dir, "best_model.pt"))
+                    # Save best checkpoint using checkpoint manager
+                    self.checkpoint_manager.save_checkpoint(
+                        model=self.model,
+                        optimizer=self.optimizer,
+                        epoch=epoch + 1,
+                        loss=val_metrics['val_loss'],
+                        metrics=epoch_metrics,
+                        scheduler=self.scheduler,
+                        checkpoint_name=f"best_model_epoch_{epoch + 1:03d}",
+                        is_best=True
+                    )
                     print(f"  New best model saved! Val Loss: {self.best_val_loss:.4f}")
             else:
                 patience_counter += 1
@@ -297,7 +317,18 @@ class TransformerTrainer:
         
         # Save final model
         if save_path:
-            self.save_model(save_path)
+            # Save final checkpoint using checkpoint manager
+            self.checkpoint_manager.save_checkpoint(
+                model=self.model,
+                optimizer=self.optimizer,
+                epoch=len(metrics_history),
+                loss=metrics_history[-1]['train_loss'],
+                metrics=metrics_history[-1],
+                scheduler=self.scheduler,
+                checkpoint_name="final_model",
+                is_best=False
+            )
+            print(f"Final model saved to: {save_path}")
         
         # Save training history
         self.save_training_history(metrics_history)
@@ -334,17 +365,25 @@ class TransformerTrainer:
         Args:
             path: Path to load the model from
         """
-        checkpoint = torch.load(path, map_location=self.device)
+        checkpoint_data = self.checkpoint_manager.load_checkpoint(
+            checkpoint_path=path,
+            model=self.model,
+            optimizer=self.optimizer,
+            scheduler=self.scheduler,
+            device=str(self.device)
+        )
         
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        self.current_epoch = checkpoint['current_epoch']
-        self.best_val_loss = checkpoint['best_val_loss']
-        self.train_losses = checkpoint['train_losses']
-        self.val_losses = checkpoint['val_losses']
+        # Update trainer state
+        self.current_epoch = checkpoint_data.get('epoch', 0)
+        self.best_val_loss = checkpoint_data.get('loss', float('inf'))
         
-        if self.scheduler is not None and 'scheduler_state_dict' in checkpoint:
-            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        # Update loss history if available
+        if 'metrics' in checkpoint_data:
+            metrics = checkpoint_data['metrics']
+            if 'train_loss' in metrics:
+                self.train_losses.append(metrics['train_loss'])
+            if 'val_loss' in metrics:
+                self.val_losses.append(metrics['val_loss'])
         
         print(f"Model loaded from {path}")
         print(f"Resumed from epoch {self.current_epoch + 1}")
@@ -352,10 +391,30 @@ class TransformerTrainer:
     
     def save_training_history(self, metrics_history: List[Dict[str, float]]):
         """Save training history to JSON file."""
-        history_path = os.path.join(self.save_dir, "training_history.json")
+        history_path = os.path.join(self.run_dir, "training_history.json")
         with open(history_path, 'w') as f:
             json.dump(metrics_history, f, indent=2)
         print(f"Training history saved to {history_path}")
+    
+    def list_checkpoints(self):
+        """List all checkpoints in current run."""
+        return self.checkpoint_manager.list_checkpoints(self.run_dir)
+    
+    def list_runs(self):
+        """List all runs."""
+        return self.checkpoint_manager.list_runs()
+    
+    def get_best_checkpoint(self):
+        """Get the best checkpoint in current run."""
+        return self.checkpoint_manager.get_best_checkpoint(self.run_dir)
+    
+    def cleanup_checkpoints(self, keep_latest: int = 5):
+        """Cleanup checkpoints in current run."""
+        return self.checkpoint_manager.cleanup_run(self.run_dir, keep_latest)
+    
+    def cleanup_all_runs(self, keep_latest_runs: int = 3, keep_latest_checkpoints: int = 5):
+        """Cleanup all runs and checkpoints."""
+        return self.checkpoint_manager.cleanup_all_runs(keep_latest_runs, keep_latest_checkpoints)
 
 
 if __name__ == "__main__":
