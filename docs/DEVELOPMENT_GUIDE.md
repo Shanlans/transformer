@@ -1,31 +1,41 @@
-# Transformer开发指南
+# Transformer Development Guide
 
-## 🎯 开发目标
+## 🎯 Development Goals
 
-本指南将帮助您逐步实现一个完整的Transformer模型，包括：
-- 模型架构实现
-- 数据处理
-- 训练循环
-- 测试验证
+This guide helps you understand and extend the complete Transformer implementation, including:
+- Model architecture implementation
+- Data processing and dataset management
+- Training system with comprehensive features
+- Testing and validation framework
+- Visualization and evaluation tools
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
 transformer/
-├── src/
+├── src/                        # Source code
 │   ├── models/
-│   │   └── transformer.py      # Transformer模型实现
-│   ├── data/
-│   │   └── dataset.py          # 数据集实现
-│   ├── training/
-│   │   └── trainer.py          # 训练器实现
-│   └── utils/
-│       └── helpers.py          # 工具函数
-├── tests/
-│   └── test_transformer.py     # 测试文件
-├── examples/
-│   └── simple_example.py       # 简单示例
-└── train_transformer.py        # 主训练脚本
+│   │   └── transformer.py      # Complete Transformer model
+│   ├── datasets/
+│   │   └── translation_dataset.py  # Translation dataset
+│   ├── trainers/
+│   │   └── transformer_trainer.py  # Training manager
+│   └── utils/                  # Utility modules
+│       ├── config_manager.py   # Configuration management
+│       ├── checkpoint_manager.py  # Checkpoint management
+│       ├── loss_functions.py   # Loss functions
+│       ├── training_visualizer.py  # Training visualization
+│       └── evaluation_metrics.py  # Evaluation metrics
+├── tests/                      # Test files
+│   ├── functional/            # Functional tests
+│   └── visualizations/        # Test visualizations
+├── examples/                  # Example scripts
+├── docs/                      # Documentation
+├── data/                      # Sample data
+├── checkpoints/               # Model checkpoints
+├── train.py                   # Main training script
+├── training_config.json       # Training configuration
+└── requirements.txt           # Dependencies
 ```
 
 ## 🚀 开发步骤

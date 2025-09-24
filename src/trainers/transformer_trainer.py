@@ -13,11 +13,15 @@ import os
 import json
 from tqdm import tqdm
 import sys
+from datetime import datetime
 
 # Add src directory to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils.loss_functions import create_loss_function
 from utils.checkpoint_manager import CheckpointManager
+from utils.training_visualizer import TrainingVisualizer
+from utils.evaluation_metrics import TranslationEvaluator
+from utils.config_version_manager import ConfigVersionManager
 
 
 class TransformerTrainer:
@@ -83,6 +87,20 @@ class TransformerTrainer:
         # Create run directory
         self.run_dir = self.checkpoint_manager.create_run_directory()
         
+        # Initialize config version manager
+        self.config_version_manager = ConfigVersionManager()
+        
+        # Store experiment timestamp for checkpoint naming
+        self.experiment_timestamp = None
+        
+        # Initialize visualizer
+        self.visualizer = TrainingVisualizer(
+            save_dir=os.path.join(self.run_dir, "visualizations")
+        )
+        
+        # Initialize evaluator (will be set when dataset is available)
+        self.evaluator = None
+        
         # Move model to device
         self.model.to(self.device)
         
@@ -125,6 +143,28 @@ class TransformerTrainer:
         print(f"  Loss function: {type(self.criterion).__name__}")
         print(f"  Scheduler: {type(self.scheduler).__name__ if self.scheduler else 'None'}")
         print(f"  Save directory: {save_dir}")
+        print(f"  Visualizer: {type(self.visualizer).__name__}")
+    
+    def set_evaluator(self, tgt_vocab: Dict[str, int], idx2word: Dict[int, str]):
+        """
+        Set the evaluator for the trainer.
+        
+        Args:
+            tgt_vocab: Target vocabulary mapping
+            idx2word: Index to word mapping
+        """
+        self.evaluator = TranslationEvaluator(tgt_vocab, idx2word)
+        print(f"Evaluator set with vocabulary size: {len(tgt_vocab)}")
+    
+    def set_experiment_timestamp(self, timestamp: str):
+        """
+        Set experiment timestamp for checkpoint directory naming.
+        
+        Args:
+            timestamp: Experiment timestamp (format: YYYYMMDD_HHMMSS)
+        """
+        self.experiment_timestamp = timestamp
+        print(f"Experiment timestamp set: {timestamp}")
     
     def _create_scheduler(self, scheduler_type: str, learning_rate: float) -> Optional[optim.lr_scheduler._LRScheduler]:
         """Create learning rate scheduler."""
@@ -253,8 +293,32 @@ class TransformerTrainer:
         Returns:
             List of training metrics for each epoch
         """
-        print(f"Starting training for {num_epochs} epochs...")
+        print(f"\n{'='*60}")
+        print(f"STARTING TRAINING")
+        print(f"{'='*60}")
+        print(f"Total epochs: {num_epochs}")
         print(f"Early stopping patience: {early_stopping_patience}")
+        print(f"Training batches per epoch: {len(self.train_dataloader)}")
+        if self.val_dataloader:
+            print(f"Validation batches per epoch: {len(self.val_dataloader)}")
+        print(f"Device: {self.device}")
+        print(f"Model parameters: {sum(p.numel() for p in self.model.parameters()):,}")
+        print(f"{'='*60}")
+        
+        # Record configuration version
+        config_version_id = self.config_version_manager.auto_save_config_version(
+            config_path="training_config.json",
+            checkpoint_run_dir=self.run_dir,
+            description=f"Training run starting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            tags=["training", "auto_saved"]
+        )
+        print(f"Configuration version recorded: {config_version_id}")
+        
+        # If experiment timestamp is set, recreate run directory with matching timestamp
+        if self.experiment_timestamp:
+            print(f"Recreating run directory with experiment timestamp: {self.experiment_timestamp}")
+            self.run_dir = self.checkpoint_manager.create_run_directory(custom_timestamp=self.experiment_timestamp)
+            print(f"New run directory: {self.run_dir}")
         
         metrics_history = []
         patience_counter = 0
@@ -279,13 +343,27 @@ class TransformerTrainer:
             epoch_metrics['epoch_time'] = time.time() - epoch_start_time
             metrics_history.append(epoch_metrics)
             
+            # Add metrics to visualizer
+            self.visualizer.add_metrics(epoch + 1, epoch_metrics)
+            
             # Print epoch summary
-            print(f"Epoch {epoch + 1}/{num_epochs}:")
+            print(f"\nEpoch {epoch + 1}/{num_epochs}:")
             print(f"  Train Loss: {train_metrics['train_loss']:.4f}")
             if val_metrics:
                 print(f"  Val Loss: {val_metrics['val_loss']:.4f}")
             print(f"  Learning Rate: {train_metrics['learning_rate']:.6f}")
             print(f"  Epoch Time: {epoch_metrics['epoch_time']:.2f}s")
+            
+            # Print progress
+            progress = (epoch + 1) / num_epochs * 100
+            print(f"  Progress: {progress:.1f}%")
+            
+            # Print estimated remaining time
+            if epoch > 0:
+                avg_epoch_time = sum(m['epoch_time'] for m in metrics_history) / len(metrics_history)
+                remaining_epochs = num_epochs - (epoch + 1)
+                estimated_remaining = remaining_epochs * avg_epoch_time
+                print(f"  Estimated remaining time: {estimated_remaining:.1f}s ({estimated_remaining/60:.1f}min)")
             
             # Check for best model
             if val_metrics and val_metrics['val_loss'] < self.best_val_loss:
@@ -332,6 +410,9 @@ class TransformerTrainer:
         
         # Save training history
         self.save_training_history(metrics_history)
+        
+        # Generate visualizations
+        self.generate_training_visualizations()
         
         print("Training completed!")
         return metrics_history
@@ -415,6 +496,95 @@ class TransformerTrainer:
     def cleanup_all_runs(self, keep_latest_runs: int = 3, keep_latest_checkpoints: int = 5):
         """Cleanup all runs and checkpoints."""
         return self.checkpoint_manager.cleanup_all_runs(keep_latest_runs, keep_latest_checkpoints)
+    
+    def generate_training_visualizations(self):
+        """Generate comprehensive training visualizations."""
+        print("Generating training visualizations...")
+        
+        # Plot training metrics
+        self.visualizer.plot_training_metrics("training_metrics.png")
+        
+        # Plot gradient flow for the last epoch
+        if self.current_epoch > 0:
+            self.visualizer.plot_gradient_flow(self.model, self.current_epoch, "gradient_flow_final.png")
+        
+        # Save metrics summary
+        self.visualizer.save_metrics_summary("metrics_summary.json")
+        
+        print("Training visualizations generated!")
+    
+    def evaluate_model(
+        self,
+        dataloader: torch.utils.data.DataLoader,
+        max_samples: Optional[int] = None
+    ) -> Dict[str, float]:
+        """
+        Evaluate model using comprehensive metrics.
+        
+        Args:
+            dataloader: Data loader for evaluation
+            max_samples: Maximum number of samples to evaluate
+            
+        Returns:
+            Dictionary of evaluation metrics
+        """
+        if self.evaluator is None:
+            print("Evaluator not set. Please call set_evaluator() first.")
+            return {}
+        
+        print("Evaluating model...")
+        metrics = self.evaluator.evaluate_model(
+            model=self.model,
+            dataloader=dataloader,
+            device=str(self.device),
+            max_samples=max_samples
+        )
+        
+        # Plot evaluation metrics
+        if metrics:
+            self.visualizer.plot_evaluation_metrics(
+                {k: [v] for k, v in metrics.items()},
+                "evaluation_metrics.png"
+            )
+        
+        print("Model evaluation completed!")
+        return metrics
+    
+    def visualize_attention(
+        self,
+        src_tokens: torch.Tensor,
+        tgt_tokens: torch.Tensor,
+        src_vocab: Dict[str, int],
+        tgt_vocab: Dict[str, int],
+        epoch: int,
+        layer_idx: int = 0,
+        head_idx: int = 0
+    ) -> str:
+        """
+        Visualize attention weights for a specific example.
+        
+        Args:
+            src_tokens: Source token sequence
+            tgt_tokens: Target token sequence
+            src_vocab: Source vocabulary
+            tgt_vocab: Target vocabulary
+            epoch: Current epoch
+            layer_idx: Encoder layer index
+            head_idx: Attention head index
+            
+        Returns:
+            Path to saved attention plot
+        """
+        return self.visualizer.plot_attention_weights(
+            model=self.model,
+            src_tokens=src_tokens,
+            tgt_tokens=tgt_tokens,
+            src_vocab=src_vocab,
+            tgt_vocab=tgt_vocab,
+            epoch=epoch,
+            layer_idx=layer_idx,
+            head_idx=head_idx
+        )
 
 
 if __name__ == "__main__":

@@ -1,121 +1,271 @@
 # Transformer Project
 
-基于PyTorch的Transformer模型实现项目，采用模块化的项目结构设计。
+A comprehensive PyTorch implementation of the Transformer model for machine translation tasks.
 
-## 📁 项目结构
+## 📁 Project Structure
 
 ```
 transformer/
-├── config/                  # 配置文件
-│   ├── environment.yml      # Conda环境配置
-│   ├── requirements.txt     # Python依赖列表
-│   ├── pyproject.toml       # 项目配置
-│   ├── .gitignore          # Git忽略规则
-│   └── test_environment.py  # 环境测试脚本
-├── scripts/                 # 脚本文件
-│   ├── activate_torch2.5.sh # 环境激活脚本
-│   ├── init_git.sh         # Git初始化脚本
-│   ├── setup_git.sh        # Git设置脚本
-│   └── check_setup.py      # 项目状态检查脚本
-├── docs/                   # 文档
-│   ├── README.md           # 详细项目说明
-│   ├── git_workflow.md     # Git工作流程指南
-│   ├── commit_template.md  # 提交信息模板说明
-│   └── setup_git_manual.md # Git手动设置指南
-├── src/                    # 源代码
-│   ├── models/             # 模型定义
-│   ├── data/               # 数据处理
-│   ├── training/           # 训练相关
-│   └── utils/              # 工具函数
-├── tests/                  # 测试文件
-├── examples/               # 示例代码
-├── .vscode/                # VS Code配置
-└── .git/                   # Git仓库
+├── src/                        # Source code
+│   ├── models/                 # Model implementations
+│   │   └── transformer.py     # Complete Transformer model
+│   ├── datasets/              # Dataset implementations
+│   │   └── translation_dataset.py  # Translation dataset
+│   ├── trainers/              # Training utilities
+│   │   └── transformer_trainer.py  # Training manager
+│   └── utils/                  # Utility modules
+│       ├── config_manager.py  # Configuration management
+│       ├── checkpoint_manager.py  # Checkpoint management
+│       ├── loss_functions.py  # Loss functions
+│       ├── training_visualizer.py  # Training visualization
+│       └── evaluation_metrics.py  # Evaluation metrics
+├── tests/                      # Test files
+│   ├── functional/            # Functional tests
+│   │   ├── test_transformer.py
+│   │   ├── test_positional_encoding.py
+│   │   └── test_multihead_attention.py
+│   ├── visualizations/        # Test visualizations
+│   └── README_testing.md     # Testing documentation
+├── examples/                  # Example scripts
+│   ├── create_sample_dataset.py
+│   ├── manage_checkpoints.py
+│   └── train_transformer.py
+├── docs/                      # Documentation
+│   ├── DEVELOPMENT_GUIDE.md
+│   ├── git_workflow.md
+│   ├── commit_template.md
+│   └── setup_git_manual.md
+├── data/                      # Sample data
+│   ├── train.json
+│   ├── train.en
+│   └── train.de
+├── checkpoints/               # Model checkpoints
+├── train.py                   # Main training script
+├── training_config.json       # Training configuration
+├── requirements.txt           # Python dependencies
+├── TRAINING_GUIDE.md         # Training documentation
+├── CHECKPOINT_MANAGEMENT.md   # Checkpoint management guide
+└── README.md                 # This file
 ```
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 环境设置
+### 1. Environment Setup
 ```bash
-# 激活环境
-source scripts/activate_torch2.5.sh
-
-# 或手动激活
+# Activate conda environment
 conda activate torch2.5
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### 2. 验证环境
+### 2. Run Training
 ```bash
-python scripts/check_setup.py
+# Train with default configuration
+python train.py
+
+# Or train with custom configuration
+python examples/train_transformer.py --epochs 10 --batch_size 16
 ```
 
-### 3. 查看文档
-- [详细项目说明](docs/README.md)
-- [Git工作流程](docs/git_workflow.md)
-- [环境配置](config/)
+### 3. Manage Experiments
+```bash
+# List all experiments
+python manage_experiments.py list
 
-## 📖 详细文档
+# Create a new experiment
+python manage_experiments.py create --name small_test --d_model 128 --epochs 5
 
-请查看 `docs/` 目录下的详细文档。
+# Compare experiments
+python manage_experiments.py compare --names small_test medium_exp
 
-## 🔧 开发
+# Run an experiment
+python manage_experiments.py run --name small_test
+```
 
-- **源代码**: 位于 `src/` 目录
-- **测试文件**: 位于 `tests/` 目录
-- **配置文件**: 位于 `config/` 目录
-- **脚本工具**: 位于 `scripts/` 目录
+### 4. Manage Checkpoints
+```bash
+# List all training runs
+python examples/manage_checkpoints.py list-runs
 
-## 📋 项目特性
+# Clean up old checkpoints
+python examples/manage_checkpoints.py cleanup-all
+```
 
-- ✅ **模块化设计**: 清晰的目录结构，便于维护
-- ✅ **环境管理**: 完整的Conda环境配置
-- ✅ **版本控制**: 规范的Git工作流程
-- ✅ **代码质量**: 配置文件和检查工具
-- ✅ **文档完善**: 详细的使用说明和开发指南
+## 📖 Documentation
 
-## 🛠️ 技术栈
+- **[Training Guide](TRAINING_GUIDE.md)** - Complete training documentation
+- **[Experiment Management](EXPERIMENT_MANAGEMENT.md)** - Experiment configuration system
+- **[Checkpoint Management](CHECKPOINT_MANAGEMENT.md)** - Checkpoint system guide
+- **[Testing Guide](tests/README_testing.md)** - Testing documentation
+- **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Development workflow
 
-- **深度学习框架**: PyTorch 2.2.2
-- **Python版本**: 3.10.18
-- **环境管理**: Conda
-- **版本控制**: Git
-- **开发环境**: VS Code
+## 🔧 Features
 
-## 📝 开发指南
+### Model Components
+- ✅ **Positional Encoding** - Sine/cosine positional encodings
+- ✅ **Multi-Head Attention** - Scaled dot-product attention
+- ✅ **Feed-Forward Networks** - Position-wise feed-forward layers
+- ✅ **Encoder/Decoder Layers** - Complete encoder and decoder stacks
+- ✅ **Full Transformer** - Complete model with embedding layers
 
-### 环境管理
-- 使用 `conda activate torch2.5` 激活环境
-- 使用 `conda deactivate` 退出环境
-- 添加新依赖时，更新 `config/requirements.txt` 和 `config/environment.yml`
+### Training System
+- ✅ **Comprehensive Trainer** - Full training loop with validation
+- ✅ **Loss Functions** - Masked cross-entropy and label smoothing
+- ✅ **Optimizers** - AdamW with configurable parameters
+- ✅ **Schedulers** - Step and cosine annealing learning rate schedules
+- ✅ **Gradient Clipping** - Prevents gradient explosion
+- ✅ **Early Stopping** - Prevents overfitting
 
-### 版本控制
-- 运行 `bash scripts/init_git.sh` 初始化Git仓库
-- 查看 `docs/git_workflow.md` 了解详细工作流程
-- 使用 `docs/commit_template.md` 规范提交信息
-- 遵循分支策略：`main`、`develop`、`feature/*`
+### Data Management
+- ✅ **Translation Dataset** - Flexible dataset for translation tasks
+- ✅ **Vocabulary Building** - Automatic vocabulary construction
+- ✅ **Data Loading** - Efficient data loading with batching
+- ✅ **Tokenization** - Word-level tokenization with special tokens
 
-### 代码质量
-- 使用 `python scripts/check_setup.py` 验证环境
-- 遵循PEP 8代码规范
-- 编写清晰的提交信息
-- 定期同步主分支
+### Visualization & Evaluation
+- ✅ **Training Metrics** - Loss curves and learning rate plots
+- ✅ **Gradient Flow** - Gradient magnitude analysis
+- ✅ **Attention Visualization** - Attention weight heatmaps
+- ✅ **Evaluation Metrics** - BLEU, METEOR, ROUGE-L, Exact Match
 
-## 🎯 下一步计划
+### Experiment Management
+- ✅ **Configuration System** - JSON-based experiment configurations
+- ✅ **Experiment Creation** - Easy creation of new experiment configs
+- ✅ **Experiment Comparison** - Side-by-side comparison of experiments
+- ✅ **Template System** - Pre-defined configuration templates
+- ✅ **Version Control** - Track experiment history and changes
 
-1. 实现Transformer模型核心组件
-2. 创建训练和评估脚本
-3. 添加数据处理工具
-4. 完善测试用例
-5. 添加示例代码
+### Checkpoint Management
+- ✅ **Timestamped Runs** - Organized checkpoint storage
+- ✅ **Metadata Tracking** - Comprehensive checkpoint metadata
+- ✅ **Cleanup Tools** - Automated checkpoint cleanup
+- ✅ **Model Resuming** - Resume training from checkpoints
 
-## 📄 许可证
+## 🛠️ Configuration
 
-本项目采用MIT许可证。
+The project uses JSON-based configuration with an advanced experiment management system:
 
-## 🤝 贡献
+### Basic Configuration
+Edit `training_config.json` to customize:
 
-欢迎提交Issue和Pull Request来改进这个项目！
+```json
+{
+  "model": {
+    "d_model": 512,
+    "n_heads": 8,
+    "n_encoder_layers": 6,
+    "n_decoder_layers": 6
+  },
+  "training": {
+    "epochs": 50,
+    "learning_rate": 0.0001,
+    "batch_size": 32
+  }
+}
+```
+
+### Experiment Management
+Create and manage multiple experiment configurations:
+
+```bash
+# Create experiments with different parameters
+python manage_experiments.py create --name small_test --d_model 128 --epochs 5
+python manage_experiments.py create --name large_exp --d_model 512 --epochs 50
+
+# Compare experiments
+python manage_experiments.py compare --names small_test large_exp
+
+# Run specific experiment
+python manage_experiments.py run --name small_test
+```
+
+## 📊 Model Architecture
+
+The Transformer model includes:
+- **Embedding Layers**: Source and target embeddings with scaling
+- **Positional Encoding**: Sine/cosine positional encodings
+- **Encoder Stack**: Multi-head self-attention + feed-forward layers
+- **Decoder Stack**: Masked self-attention + encoder-decoder attention + feed-forward
+- **Output Layer**: Linear projection to target vocabulary
+
+## 🧪 Testing
+
+Run comprehensive tests:
+```bash
+# Test all components
+python -m pytest tests/functional/
+
+# Test specific components
+python tests/functional/test_transformer.py
+python tests/functional/test_positional_encoding.py
+python tests/functional/test_multihead_attention.py
+```
+
+## 📈 Training Visualization
+
+The training system provides comprehensive visualizations:
+- **Training Metrics**: Loss curves, learning rate schedules
+- **Gradient Analysis**: Gradient flow and magnitude plots
+- **Attention Maps**: Attention weight visualizations
+- **Evaluation Results**: Translation quality metrics
+
+## 🔍 Evaluation Metrics
+
+The system supports multiple evaluation metrics:
+- **BLEU**: Bilingual Evaluation Understudy
+- **METEOR**: Metric for Evaluation of Translation with Explicit ORdering
+- **ROUGE-L**: Recall-Oriented Understudy for Gisting Evaluation
+- **Exact Match**: Exact sequence matching
+- **Word Accuracy**: Word-level accuracy
+- **Perplexity**: Model confidence measure
+
+## 🛠️ Technical Stack
+
+- **Deep Learning**: PyTorch 2.2.2
+- **Python**: 3.10.18
+- **Environment**: Conda
+- **Visualization**: Matplotlib
+- **Evaluation**: NLTK, SacreBLEU
+- **Configuration**: JSON
+
+## 📝 Development
+
+### Code Structure
+- **Modular Design**: Clear separation of concerns
+- **Type Hints**: Full type annotation support
+- **Documentation**: Comprehensive docstrings
+- **Testing**: Extensive test coverage
+- **Configuration**: JSON-based configuration system
+
+### Best Practices
+- Follow PEP 8 code style
+- Write comprehensive tests
+- Document all functions and classes
+- Use meaningful variable names
+- Implement proper error handling
+
+## 🎯 Future Enhancements
+
+1. **Advanced Architectures**: Implement variants like BERT, GPT
+2. **Optimization**: Add mixed precision training
+3. **Distributed Training**: Multi-GPU training support
+4. **Inference**: Beam search and sampling strategies
+5. **Deployment**: Model serving and API development
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
 ---
 
-**注意**: 这是一个学习和研究项目，用于深入理解Transformer架构的实现细节。
+**Note**: This is an educational project for understanding Transformer architecture implementation details.

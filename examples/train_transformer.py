@@ -256,6 +256,9 @@ def main():
         save_dir=args.save_dir
     )
     
+    # Set evaluator
+    trainer.set_evaluator(train_dataset.dataset.tgt_vocab, train_dataset.dataset.tgt_idx2word)
+    
     # Resume from checkpoint if specified
     if args.resume:
         print(f"Resuming from checkpoint: {args.resume}")
@@ -280,6 +283,19 @@ def main():
         print(f"Final validation loss: {metrics_history[-1]['val_loss']:.4f}")
     print(f"Total epochs: {len(metrics_history)}")
     print(f"Model saved to: {args.save_dir}")
+    
+    # Evaluate model
+    print("\n" + "=" * 60)
+    print("MODEL EVALUATION")
+    print("=" * 60)
+    evaluation_metrics = trainer.evaluate_model(val_dataloader, max_samples=50)
+    
+    if evaluation_metrics:
+        print("Evaluation Results:")
+        for metric, value in evaluation_metrics.items():
+            print(f"  {metric}: {value:.4f}")
+    else:
+        print("Evaluation not available (evaluator not set)")
 
 
 if __name__ == "__main__":

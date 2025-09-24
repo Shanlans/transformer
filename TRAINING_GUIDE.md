@@ -6,19 +6,21 @@ This guide explains how to train the Transformer model for English-German transl
 
 ## Quick Start
 
-### 1. Basic Training
+### 1. JSON Configuration Training (Recommended)
 
 ```bash
-# Train with default parameters
-python examples/train_transformer.py
+# Train with JSON configuration
+python train.py
 
-# Train with custom parameters
-python examples/train_transformer.py --epochs 10 --batch_size 16 --lr 0.0001
+# Edit training_config.json to customize parameters
 ```
 
-### 2. Small Model Training (for testing)
+### 2. Command Line Training (Legacy)
 
 ```bash
+# Train with command line parameters
+python examples/train_transformer.py --epochs 10 --batch_size 16 --lr 0.0001
+
 # Train a small model for quick testing
 python examples/train_transformer.py \
     --epochs 5 \
@@ -30,9 +32,46 @@ python examples/train_transformer.py \
     --d_ff 512
 ```
 
-## Training Parameters
+## Configuration
 
-### Data Parameters
+### JSON Configuration (Recommended)
+
+The project uses JSON-based configuration for flexible parameter management. Edit `training_config.json`:
+
+```json
+{
+  "experiment": {
+    "name": "transformer_translation",
+    "description": "English-German translation using Transformer",
+    "version": "1.0"
+  },
+  "data": {
+    "train_data_path": "data/train.json",
+    "max_length": 20,
+    "train_split": 0.8,
+    "batch_size": 32
+  },
+  "model": {
+    "d_model": 512,
+    "n_heads": 8,
+    "n_encoder_layers": 6,
+    "n_decoder_layers": 6,
+    "d_ff": 2048,
+    "dropout": 0.1
+  },
+  "training": {
+    "epochs": 50,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.01,
+    "gradient_clip_norm": 1.0,
+    "early_stopping_patience": 10
+  }
+}
+```
+
+### Command Line Parameters (Legacy)
+
+#### Data Parameters
 - `--data_path`: Path to training data (default: `data/train.json`)
 - `--max_length`: Maximum sequence length (default: 20)
 - `--train_split`: Fraction of data for training (default: 0.8)

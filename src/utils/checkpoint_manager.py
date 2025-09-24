@@ -44,18 +44,22 @@ class CheckpointManager:
         print(f"  Base directory: {base_dir}")
         print(f"  Max checkpoints: {max_checkpoints if max_checkpoints > 0 else 'unlimited'}")
     
-    def create_run_directory(self, run_name: Optional[str] = None) -> str:
+    def create_run_directory(self, run_name: Optional[str] = None, custom_timestamp: Optional[str] = None) -> str:
         """
         Create a new run directory with timestamp.
         
         Args:
             run_name: Optional name for the run (default: auto-generated)
+            custom_timestamp: Custom timestamp to use (format: YYYYMMDD_HHMMSS)
             
         Returns:
             Path to the created run directory
         """
         # Generate timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        if custom_timestamp:
+            timestamp = custom_timestamp
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Create run name
         if run_name is None:
