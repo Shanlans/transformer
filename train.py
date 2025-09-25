@@ -142,6 +142,23 @@ def create_trainer(config, model, train_dataloader, val_dataloader, device):
     if hasattr(config.experiment, 'timestamp_id') and config.experiment.timestamp_id:
         trainer.set_experiment_timestamp(config.experiment.timestamp_id)
     
+    # Set experiment timestamp from environment variable if available (for default config)
+    import os
+    experiment_name = os.environ.get('EXPERIMENT_NAME')
+    if experiment_name:
+        print(f"🔗 Linking to experiment: {experiment_name}")
+        # Load experiment to get timestamp_id
+        try:
+            from src.utils.experiment_manager import ExperimentManager
+            exp_manager = ExperimentManager()
+            exp_config_manager = exp_manager.load_experiment(experiment_name)
+            exp_config = exp_config_manager.get_config()
+            if hasattr(exp_config.experiment, 'timestamp_id') and exp_config.experiment.timestamp_id:
+                trainer.set_experiment_timestamp(exp_config.experiment.timestamp_id)
+                print(f"✅ Experiment timestamp set: {exp_config.experiment.timestamp_id}")
+        except Exception as e:
+            print(f"⚠️  Could not link to experiment {experiment_name}: {e}")
+    
     print(f"Trainer created:")
     print(f"  Optimizer: {config.optimizer.type}")
     print(f"  Learning rate: {config.training.learning_rate}")

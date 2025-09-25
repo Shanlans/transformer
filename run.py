@@ -325,7 +325,7 @@ class UnifiedTrainer:
         except Exception as e:
             print(f"❌ Error creating resume configuration: {e}")
     
-    def run_training(self, config_path: str, force_local: bool = False, force_cloud: bool = False):
+    def run_training(self, config_path: str, force_local: bool = False, force_cloud: bool = False, experiment_name: str = None):
         """Run training with the specified configuration."""
         print(f"🚀 Starting training with config: {config_path}")
         
@@ -339,11 +339,11 @@ class UnifiedTrainer:
         
         # Determine training method
         if resource_info['type'] == 'cloud_gpu':
-            return self.run_cloud_training(config_path)
+            return self.run_cloud_training(config_path, experiment_name)
         else:
-            return self.run_local_training(config_path, resource_info)
+            return self.run_local_training(config_path, resource_info, experiment_name)
     
-    def run_cloud_training(self, config_path: str) -> bool:
+    def run_cloud_training(self, config_path: str, experiment_name: str = None) -> bool:
         """Run training on cloud GPU."""
         if not self.colab_manager:
             print("❌ ColabCode not available for cloud training.")
@@ -398,7 +398,7 @@ class UnifiedTrainer:
         
         return training_success
     
-    def run_local_training(self, config_path: str, resource_info: Dict[str, Any]) -> bool:
+    def run_local_training(self, config_path: str, resource_info: Dict[str, Any], experiment_name: str = None) -> bool:
         """Run training on local device."""
         # Determine device
         if resource_info['type'] == 'local_gpu':
@@ -412,9 +412,15 @@ class UnifiedTrainer:
         
         # Run training script
         try:
+            # Set environment variable for experiment name if provided
+            env = os.environ.copy()
+            if experiment_name:
+                env['EXPERIMENT_NAME'] = experiment_name
+                print(f"🔗 Linking training to experiment: {experiment_name}")
+            
             result = subprocess.run([
                 'python', 'train.py', '--config', config_path
-            ], check=True, capture_output=True, text=True)
+            ], check=True, capture_output=True, text=True, env=env)
             
             print("✅ Local training completed successfully!")
             print(result.stdout)
@@ -702,6 +708,20 @@ Examples:
     elif args.train:
         if args.use_default:
             config_path = "training_config.json"
+            # For default config, create a temporary experiment to enable checkpoint management
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            temp_experiment_name = f"default_training_{timestamp}"
+            
+            print(f"📋 Using default configuration")
+            print(f"🔄 Creating temporary experiment: {temp_experiment_name}")
+            
+            # Create temporary experiment for checkpoint management
+            trainer.create_experiment(
+                name=temp_experiment_name,
+                description=f"Temporary experiment for default config training at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+            
         elif args.config:
             config_path = args.config
         elif args.experiment:
@@ -715,10 +735,18 @@ Examples:
         else:
             parser.error("--train requires --use-default, --config, or --experiment")
         
+        # Determine experiment name for checkpoint linking
+        experiment_name = None
+        if args.use_default:
+            experiment_name = temp_experiment_name
+        elif args.experiment:
+            experiment_name = args.experiment
+        
         success = trainer.run_training(
             config_path=config_path,
             force_local=args.force_local,
-            force_cloud=args.force_cloud
+            force_cloud=args.force_cloud,
+            experiment_name=experiment_name
         )
     
     elif args.list_checkpoints:
