@@ -73,10 +73,20 @@ class ConfigVersionManager:
         config_manager = ConfigManager(config_path)
         config = config_manager.get_config()
         
-        # Generate version ID
+        # Generate version ID using unified timestamp manager
         if version_name is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            version_id = f"config_{timestamp}"
+            try:
+                from .timestamp_manager import get_timestamp_manager
+                timestamp_manager = get_timestamp_manager()
+                current_timestamp = timestamp_manager.get_current_timestamp()
+                if current_timestamp:
+                    version_id = f"config_{current_timestamp}"
+                else:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    version_id = f"config_{timestamp}"
+            except ImportError:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                version_id = f"config_{timestamp}"
         else:
             version_id = version_name
         

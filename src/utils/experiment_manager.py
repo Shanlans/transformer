@@ -68,9 +68,16 @@ class ExperimentManager:
         Returns:
             Tuple of (experiment_path, timestamp_id)
         """
-        # Generate unique timestamp
-        timestamp = datetime.now()
-        timestamp_id = timestamp.strftime('%Y%m%d_%H%M%S')
+        # Use unified timestamp manager
+        try:
+            from .timestamp_manager import get_timestamp_manager
+            timestamp_manager = get_timestamp_manager()
+            timestamp_id = timestamp_manager.create_experiment_timestamp()
+            timestamp = datetime.now()
+        except ImportError:
+            # Fallback to old method if timestamp manager not available
+            timestamp = datetime.now()
+            timestamp_id = timestamp.strftime('%Y%m%d_%H%M%S')
         
         # Load base configuration
         base_config_manager = ConfigManager(base_config_path)

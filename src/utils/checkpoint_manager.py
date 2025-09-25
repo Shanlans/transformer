@@ -55,11 +55,23 @@ class CheckpointManager:
         Returns:
             Path to the created run directory
         """
-        # Generate timestamp
+        # Use unified timestamp manager if available
+        timestamp = None
         if custom_timestamp:
             timestamp = custom_timestamp
         else:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            try:
+                from .timestamp_manager import get_timestamp_manager
+                timestamp_manager = get_timestamp_manager()
+                current_timestamp = timestamp_manager.get_current_timestamp()
+                if current_timestamp:
+                    timestamp = current_timestamp
+            except ImportError:
+                pass
+            
+            # Fallback to generating new timestamp
+            if not timestamp:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # Create run name
         if run_name is None:

@@ -164,7 +164,27 @@ class TransformerTrainer:
             timestamp: Experiment timestamp (format: YYYYMMDD_HHMMSS)
         """
         self.experiment_timestamp = timestamp
+        
+        # Also set the unified timestamp manager
+        try:
+            from ..utils.timestamp_manager import get_timestamp_manager
+            timestamp_manager = get_timestamp_manager()
+            timestamp_manager.set_timestamp(timestamp)
+        except ImportError:
+            pass
+        
         print(f"Experiment timestamp set: {timestamp}")
+        
+        # Recreate run directory with unified timestamp
+        if self.experiment_timestamp:
+            print(f"Recreating run directory with experiment timestamp: {self.experiment_timestamp}")
+            self.run_dir = self.checkpoint_manager.create_run_directory(custom_timestamp=self.experiment_timestamp)
+            print(f"New run directory: {self.run_dir}")
+            
+            # Update visualizer to use the new run directory
+            self.visualizer = TrainingVisualizer(
+                save_dir=os.path.join(self.run_dir, "visualizations")
+            )
     
     def _create_scheduler(self, scheduler_type: str, learning_rate: float) -> Optional[optim.lr_scheduler._LRScheduler]:
         """Create learning rate scheduler."""

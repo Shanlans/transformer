@@ -224,8 +224,18 @@ class ColabManager:
             # In real implementation, this would download from ColabCode session
             print("🔄 Simulating cloud training results...")
             
-            # Create timestamp for run directory (matching local training format)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Use unified timestamp for run directory (matching local training format)
+            try:
+                from .timestamp_manager import get_timestamp_manager
+                timestamp_manager = get_timestamp_manager()
+                current_timestamp = timestamp_manager.get_current_timestamp()
+                if current_timestamp:
+                    timestamp = current_timestamp
+                else:
+                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            except ImportError:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            
             run_dir = f"run_{timestamp}"
             full_run_dir = os.path.join(local_results_dir, run_dir)
             
