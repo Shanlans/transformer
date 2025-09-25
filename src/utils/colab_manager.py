@@ -252,16 +252,14 @@ class ColabManager:
                     f.write(f"# Created at: {datetime.now().isoformat()}\n")
                     f.write(f"# This is a demo file - real checkpoints would be binary PyTorch models\n")
             
-            # Create sample visualization files
+            # Create sample visualization files (as valid PNG headers)
             viz_dir = os.path.join(local_results_dir, 'visualizations')
             os.makedirs(viz_dir, exist_ok=True)
             
             for viz_file in sample_results['visualizations']:
                 viz_path = os.path.join(viz_dir, viz_file)
-                with open(viz_path, 'w') as f:
-                    f.write(f"# Sample visualization file: {viz_file}\n")
-                    f.write(f"# Created at: {datetime.now().isoformat()}\n")
-                    f.write(f"# This is a demo file - real visualizations would be PNG images\n")
+                # Create a minimal valid PNG file with proper header
+                self._create_sample_png(viz_path, viz_file)
             
             print("Results download completed!")
             print(f"Results saved to: {local_results_dir}")
@@ -311,6 +309,41 @@ class ColabManager:
         except Exception as e:
             print(f"❌ Error during cleanup: {e}")
             return False
+    
+    def _create_sample_png(self, file_path: str, filename: str):
+        """
+        Create a minimal valid PNG file for demonstration purposes.
+        
+        Args:
+            file_path: Path where to save the PNG file
+            filename: Name of the file (for metadata)
+        """
+        try:
+            # PNG file signature (8 bytes)
+            png_signature = b'\x89PNG\r\n\x1a\n'
+            
+            # IHDR chunk for a 1x1 pixel image
+            ihdr_data = b'\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde'
+            
+            # IDAT chunk (minimal compressed data for 1x1 pixel)
+            idat_data = b'\x00\x00\x00\x0cIDAT\x08\x1dc\xf8\x0f\x00\x00\x00\xff\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb'
+            
+            # IEND chunk
+            iend_data = b'\x00\x00\x00\x00IEND\xaeB`\x82'
+            
+            # Combine all chunks
+            png_data = png_signature + ihdr_data + idat_data + iend_data
+            
+            # Write the PNG file
+            with open(file_path, 'wb') as f:
+                f.write(png_data)
+                
+        except Exception as e:
+            # Fallback: create a simple text file if PNG creation fails
+            with open(file_path, 'w') as f:
+                f.write(f"# Sample visualization file: {filename}\n")
+                f.write(f"# Created at: {datetime.now().isoformat()}\n")
+                f.write(f"# This is a demo file - real visualizations would be PNG images\n")
     
     def _create_project_zip(self, project_dir: str, zip_name: str) -> bool:
         """
