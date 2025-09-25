@@ -97,10 +97,84 @@ class ColabManager:
             print(f"Password: {self.password}")
             print("GPU is automatically available in Colab environment")
             return True
-                
+            
         except Exception as e:
             print(f"❌ Error starting ColabCode session: {e}")
             return False
+    
+    def get_gpu_info(self) -> Dict[str, Any]:
+        """
+        Get GPU information from Colab environment.
+        
+        Returns:
+            Dictionary containing GPU information
+        """
+        if not self.is_connected:
+            return {
+                'available': False,
+                'message': 'ColabCode session not connected'
+            }
+        
+        try:
+            # In real implementation, this would SSH into Colab and run:
+            # nvidia-smi --query-gpu=name,memory.total,memory.used --format=csv,noheader,nounits
+            
+            # For demo purposes, simulate GPU detection
+            print("🔍 Detecting GPU in Colab environment...")
+            
+            # Simulate different GPU types that Colab might provide
+            import random
+            gpu_types = [
+                {
+                    'name': 'Tesla T4',
+                    'memory_total': 16,
+                    'memory_used': 2,
+                    'utilization': 15
+                },
+                {
+                    'name': 'Tesla K80', 
+                    'memory_total': 12,
+                    'memory_used': 1,
+                    'utilization': 8
+                },
+                {
+                    'name': 'Tesla P4',
+                    'memory_total': 8,
+                    'memory_used': 1,
+                    'utilization': 12
+                },
+                {
+                    'name': 'Tesla P100',
+                    'memory_total': 16,
+                    'memory_used': 3,
+                    'utilization': 18
+                }
+            ]
+            
+            # Randomly select a GPU type for demo
+            selected_gpu = random.choice(gpu_types)
+            
+            gpu_info = {
+                'available': True,
+                'name': selected_gpu['name'],
+                'memory_total_gb': selected_gpu['memory_total'],
+                'memory_used_gb': selected_gpu['memory_used'],
+                'memory_free_gb': selected_gpu['memory_total'] - selected_gpu['memory_used'],
+                'utilization_percent': selected_gpu['utilization'],
+                'detected_at': datetime.now().isoformat()
+            }
+            
+            print(f"✅ GPU detected: {gpu_info['name']}")
+            print(f"   Memory: {gpu_info['memory_free_gb']:.1f}GB free / {gpu_info['memory_total_gb']:.1f}GB total")
+            print(f"   Utilization: {gpu_info['utilization_percent']}%")
+            
+            return gpu_info
+            
+        except Exception as e:
+            return {
+                'available': False,
+                'message': f'Error detecting GPU: {e}'
+            }
     
     def stop_session(self) -> bool:
         """

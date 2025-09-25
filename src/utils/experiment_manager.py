@@ -96,6 +96,38 @@ class ExperimentManager:
         config_dict['experiment']['timestamp_id'] = timestamp_id  # Add timestamp ID
         config_dict['experiment']['training_environment'] = training_environment  # Add training environment
         
+        # Add GPU information if available
+        try:
+            if training_environment == "cloud":
+                # For cloud training, we'll detect GPU during training
+                config_dict['experiment']['gpu_info'] = {
+                    'type': 'cloud_gpu',
+                    'detected_during_training': True
+                }
+            elif training_environment in ["local_gpu", "local_cpu"]:
+                # For local training, detect GPU now
+                import torch
+                if torch.cuda.is_available():
+                    gpu_name = torch.cuda.get_device_name(0)
+                    gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                    config_dict['experiment']['gpu_info'] = {
+                        'type': 'local_gpu',
+                        'name': gpu_name,
+                        'memory_gb': gpu_memory,
+                        'detected_at': timestamp.isoformat()
+                    }
+                else:
+                    config_dict['experiment']['gpu_info'] = {
+                        'type': 'local_cpu',
+                        'name': 'CPU',
+                        'detected_at': timestamp.isoformat()
+                    }
+        except Exception as e:
+            config_dict['experiment']['gpu_info'] = {
+                'type': 'unknown',
+                'error': str(e)
+            }
+        
         # Apply user overrides
         for key, value in overrides.items():
             if '.' in key:

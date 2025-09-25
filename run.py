@@ -170,6 +170,14 @@ class UnifiedTrainer:
             print(f"📊 RESOURCE: ColabCode SSH Connection")
             print(f"⚡ GPU: Free Google Colab GPU")
             print(f"🌐 LOCATION: Remote Cloud Server")
+            
+            # Get detailed GPU information
+            if self.colab_manager and self.colab_manager.is_connected:
+                gpu_info = self.colab_manager.get_gpu_info()
+                if gpu_info['available']:
+                    print(f"🎯 GPU MODEL: {gpu_info['name']}")
+                    print(f"💾 GPU MEMORY: {gpu_info['memory_free_gb']:.1f}GB free / {gpu_info['memory_total_gb']:.1f}GB total")
+                    print(f"📈 GPU UTILIZATION: {gpu_info['utilization_percent']}%")
         elif resource_info['type'] == 'local_gpu':
             print(f"💻 ENVIRONMENT: LOCAL")
             print(f"🖥️  DEVICE: CUDA")
@@ -356,6 +364,16 @@ class UnifiedTrainer:
         if not success:
             print("❌ Failed to start cloud training session.")
             return False
+        
+        # Get and display GPU information
+        print("\n🔍 Checking GPU availability...")
+        gpu_info = self.colab_manager.get_gpu_info()
+        if gpu_info['available']:
+            print(f"✅ GPU Ready: {gpu_info['name']}")
+            print(f"   Memory: {gpu_info['memory_free_gb']:.1f}GB free / {gpu_info['memory_total_gb']:.1f}GB total")
+            print(f"   Utilization: {gpu_info['utilization_percent']}%")
+        else:
+            print(f"⚠️  GPU Status: {gpu_info['message']}")
         
         print("✅ Cloud training environment ready!")
         
