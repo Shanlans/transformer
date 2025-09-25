@@ -1,10 +1,10 @@
 {
   "experiment": {
-    "name": "local_test",
-    "description": "本地训练测试",
+    "name": "cloud_test_new",
+    "description": "云端训练测试新版本",
     "version": "1.0",
-    "created_at": "2025-09-26T06:35:28.040035",
-    "timestamp_id": "20250926_063528"
+    "created_at": "2025-09-26T06:45:39.195874",
+    "timestamp_id": "20250926_064539"
   },
   "data": {
     "train_data_path": "data/train.json",

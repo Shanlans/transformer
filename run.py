@@ -386,7 +386,7 @@ class UnifiedTrainer:
             print("📥 Downloading results...")
             self.colab_manager.download_results(
                 experiment_name="cloud_training",
-                local_results_dir="./results"
+                local_results_dir="./checkpoints"
             )
             print("✅ Results downloaded!")
             
