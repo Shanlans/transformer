@@ -441,78 +441,109 @@ class UnifiedTrainer:
         except Exception as e:
             print(f"❌ Error during cleanup: {e}")
     
-    def cleanup_all(self, keep_latest_runs: int = 3, keep_latest_checkpoints: int = 5, 
-                   cleanup_experiments: bool = False, cleanup_results: bool = False):
-        """Cleanup all training artifacts."""
+    def cleanup_all(self):
+        """Clean up all training artifacts (experiments, checkpoints, config_history)."""
         print("\n" + "="*80)
-        print("🧹 COMPREHENSIVE CLEANUP")
+        print("🧹 COMPLETE CLEANUP - ALL TRAINING ARTIFACTS")
         print("="*80)
         
         total_space_freed = 0
         
+        # Cleanup experiments
+        print("\n📋 Cleaning up experiments...")
+        try:
+            experiments_dir = "experiments"
+            if os.path.exists(experiments_dir):
+                import shutil
+                # Get size before deletion
+                total_size = sum(os.path.getsize(os.path.join(dirpath, filename))
+                                for dirpath, dirnames, filenames in os.walk(experiments_dir)
+                                for filename in filenames) / (1024 * 1024)  # MB
+                
+                shutil.rmtree(experiments_dir)
+                os.makedirs(experiments_dir, exist_ok=True)
+                os.makedirs(os.path.join(experiments_dir, "configs"), exist_ok=True)
+                os.makedirs(os.path.join(experiments_dir, "results"), exist_ok=True)
+                
+                print(f"✅ Experiments directory cleaned")
+                print(f"   Space freed: {total_size:.2f} MB")
+                total_space_freed += total_size
+            else:
+                print("ℹ️  No experiments directory found")
+        except Exception as e:
+            print(f"❌ Error cleaning experiments: {e}")
+        
         # Cleanup checkpoints
         print("\n📁 Cleaning up checkpoints...")
         try:
-            result = self.checkpoint_manager.cleanup_all_runs(
-                keep_latest_runs=keep_latest_runs,
-                keep_latest_checkpoints=keep_latest_checkpoints
-            )
-            print(f"✅ Checkpoints cleaned: {result['checkpoints_cleaned']} files")
-            print(f"   Space freed: {result['space_freed']:.2f} MB")
-            total_space_freed += result['space_freed']
+            checkpoints_dir = "checkpoints"
+            if os.path.exists(checkpoints_dir):
+                import shutil
+                # Get size before deletion
+                total_size = sum(os.path.getsize(os.path.join(dirpath, filename))
+                                for dirpath, dirnames, filenames in os.walk(checkpoints_dir)
+                                for filename in filenames) / (1024 * 1024)  # MB
+                
+                shutil.rmtree(checkpoints_dir)
+                os.makedirs(checkpoints_dir, exist_ok=True)
+                
+                print(f"✅ Checkpoints directory cleaned")
+                print(f"   Space freed: {total_size:.2f} MB")
+                total_space_freed += total_size
+            else:
+                print("ℹ️  No checkpoints directory found")
         except Exception as e:
             print(f"❌ Error cleaning checkpoints: {e}")
         
-        # Cleanup experiments
-        if cleanup_experiments:
-            print("\n📋 Cleaning up experiments...")
-            try:
-                experiments_dir = "experiments"
-                if os.path.exists(experiments_dir):
-                    import shutil
-                    # Get size before deletion
-                    total_size = sum(os.path.getsize(os.path.join(dirpath, filename))
-                                    for dirpath, dirnames, filenames in os.walk(experiments_dir)
-                                    for filename in filenames) / (1024 * 1024)  # MB
-                    
-                    shutil.rmtree(experiments_dir)
-                    os.makedirs(experiments_dir, exist_ok=True)
-                    os.makedirs(os.path.join(experiments_dir, "configs"), exist_ok=True)
-                    os.makedirs(os.path.join(experiments_dir, "results"), exist_ok=True)
-                    
-                    print(f"✅ Experiments directory cleaned")
-                    print(f"   Space freed: {total_size:.2f} MB")
-                    total_space_freed += total_size
-                else:
-                    print("ℹ️  No experiments directory found")
-            except Exception as e:
-                print(f"❌ Error cleaning experiments: {e}")
+        # Cleanup config history
+        print("\n📚 Cleaning up config history...")
+        try:
+            config_history_dir = "config_history"
+            if os.path.exists(config_history_dir):
+                import shutil
+                # Get size before deletion
+                total_size = sum(os.path.getsize(os.path.join(dirpath, filename))
+                                for dirpath, dirnames, filenames in os.walk(config_history_dir)
+                                for filename in filenames) / (1024 * 1024)  # MB
+                
+                shutil.rmtree(config_history_dir)
+                os.makedirs(config_history_dir, exist_ok=True)
+                os.makedirs(os.path.join(config_history_dir, "versions"), exist_ok=True)
+                os.makedirs(os.path.join(config_history_dir, "links"), exist_ok=True)
+                
+                print(f"✅ Config history directory cleaned")
+                print(f"   Space freed: {total_size:.2f} MB")
+                total_space_freed += total_size
+            else:
+                print("ℹ️  No config history directory found")
+        except Exception as e:
+            print(f"❌ Error cleaning config history: {e}")
         
-        # Cleanup results
-        if cleanup_results:
-            print("\n📊 Cleaning up results...")
-            try:
-                results_dir = "results"
-                if os.path.exists(results_dir):
-                    import shutil
-                    # Get size before deletion
-                    total_size = sum(os.path.getsize(os.path.join(dirpath, filename))
-                                    for dirpath, dirnames, filenames in os.walk(results_dir)
-                                    for filename in filenames) / (1024 * 1024)  # MB
-                    
-                    shutil.rmtree(results_dir)
-                    
-                    print(f"✅ Results directory cleaned")
-                    print(f"   Space freed: {total_size:.2f} MB")
-                    total_space_freed += total_size
-                else:
-                    print("ℹ️  No results directory found")
-            except Exception as e:
-                print(f"❌ Error cleaning results: {e}")
+        # Cleanup results (if exists)
+        print("\n📊 Cleaning up results...")
+        try:
+            results_dir = "results"
+            if os.path.exists(results_dir):
+                import shutil
+                # Get size before deletion
+                total_size = sum(os.path.getsize(os.path.join(dirpath, filename))
+                                for dirpath, dirnames, filenames in os.walk(results_dir)
+                                for filename in filenames) / (1024 * 1024)  # MB
+                
+                shutil.rmtree(results_dir)
+                
+                print(f"✅ Results directory cleaned")
+                print(f"   Space freed: {total_size:.2f} MB")
+                total_space_freed += total_size
+            else:
+                print("ℹ️  No results directory found")
+        except Exception as e:
+            print(f"❌ Error cleaning results: {e}")
         
         print("\n" + "="*80)
-        print(f"🎉 CLEANUP COMPLETED!")
+        print(f"🎉 COMPLETE CLEANUP FINISHED!")
         print(f"   Total space freed: {total_space_freed:.2f} MB")
+        print("   All training artifacts have been removed.")
         print("="*80)
     
     def list_config_versions(self):
@@ -606,17 +637,11 @@ Examples:
   # List configuration versions
   python run.py --list-config-versions
   
-  # Cleanup old checkpoints
-  python run.py --cleanup --keep-runs 3 --keep-checkpoints 5
+  # Clean up checkpoints only (keep latest 3 runs, 5 checkpoints per run)
+  python run.py --cleanup-checkpoints --keep-runs 3 --keep-checkpoints 5
   
-  # Comprehensive cleanup (checkpoints + experiments + results)
-  python run.py --cleanup-all --cleanup-experiments --cleanup-results
-  
-  # Cleanup only results
-  python run.py --cleanup-all --cleanup-results
-  
-  # Cleanup only experiments
-  python run.py --cleanup-all --cleanup-experiments
+  # Clean up all training artifacts (experiments, checkpoints, config_history)
+  python run.py --cleanup-all
         """
     )
     
@@ -629,8 +654,8 @@ Examples:
     parser.add_argument('--create-resume', action='store_true', help='Create resume configuration')
     parser.add_argument('--validate-changes', action='store_true', help='Validate hyperparameter changes')
     parser.add_argument('--list-config-versions', action='store_true', help='List configuration versions')
-    parser.add_argument('--cleanup', action='store_true', help='Cleanup old checkpoints')
-    parser.add_argument('--cleanup-all', action='store_true', help='Comprehensive cleanup of all training artifacts')
+    parser.add_argument('--cleanup-checkpoints', action='store_true', help='Clean up checkpoints only')
+    parser.add_argument('--cleanup-all', action='store_true', help='Clean up all training artifacts (experiments, checkpoints, config_history)')
     
     # Training options
     parser.add_argument('--experiment', help='Experiment name for training')
@@ -649,10 +674,8 @@ Examples:
     parser.add_argument('--epochs', type=int, help='New number of epochs')
     
     # Cleanup options
-    parser.add_argument('--keep-runs', type=int, default=3, help='Keep latest N runs')
-    parser.add_argument('--keep-checkpoints', type=int, default=5, help='Keep latest N checkpoints per run')
-    parser.add_argument('--cleanup-experiments', action='store_true', help='Clean up experiments directory')
-    parser.add_argument('--cleanup-results', action='store_true', help='Clean up results directory')
+    parser.add_argument('--keep-runs', type=int, default=3, help='Keep latest N runs (for --cleanup-checkpoints)')
+    parser.add_argument('--keep-checkpoints', type=int, default=5, help='Keep latest N checkpoints per run (for --cleanup-checkpoints)')
     
     args = parser.parse_args()
     
@@ -730,17 +753,12 @@ Examples:
         trainer.list_config_versions()
         success = True
     
-    elif args.cleanup:
+    elif args.cleanup_checkpoints:
         trainer.cleanup_checkpoints(args.keep_runs, args.keep_checkpoints)
         success = True
     
     elif args.cleanup_all:
-        trainer.cleanup_all(
-            keep_latest_runs=args.keep_runs,
-            keep_latest_checkpoints=args.keep_checkpoints,
-            cleanup_experiments=args.cleanup_experiments,
-            cleanup_results=args.cleanup_results
-        )
+        trainer.cleanup_all()
         success = True
     
     else:
