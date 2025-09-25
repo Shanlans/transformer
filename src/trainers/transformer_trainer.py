@@ -305,7 +305,18 @@ class TransformerTrainer:
         print(f"Model parameters: {sum(p.numel() for p in self.model.parameters()):,}")
         print(f"{'='*60}")
         
-        # Record configuration version
+        # If experiment timestamp is set, recreate run directory with matching timestamp
+        if self.experiment_timestamp:
+            print(f"Recreating run directory with experiment timestamp: {self.experiment_timestamp}")
+            self.run_dir = self.checkpoint_manager.create_run_directory(custom_timestamp=self.experiment_timestamp)
+            print(f"New run directory: {self.run_dir}")
+            
+            # Update visualizer to use the new run directory
+            self.visualizer = TrainingVisualizer(
+                save_dir=os.path.join(self.run_dir, "visualizations")
+            )
+        
+        # Record configuration version (after run directory is finalized)
         config_version_id = self.config_version_manager.auto_save_config_version(
             config_path="training_config.json",
             checkpoint_run_dir=self.run_dir,
@@ -313,12 +324,6 @@ class TransformerTrainer:
             tags=["training", "auto_saved"]
         )
         print(f"Configuration version recorded: {config_version_id}")
-        
-        # If experiment timestamp is set, recreate run directory with matching timestamp
-        if self.experiment_timestamp:
-            print(f"Recreating run directory with experiment timestamp: {self.experiment_timestamp}")
-            self.run_dir = self.checkpoint_manager.create_run_directory(custom_timestamp=self.experiment_timestamp)
-            print(f"New run directory: {self.run_dir}")
         
         metrics_history = []
         patience_counter = 0
