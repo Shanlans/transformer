@@ -312,32 +312,107 @@ class ColabManager:
     
     def _create_sample_png(self, file_path: str, filename: str):
         """
-        Create a minimal valid PNG file for demonstration purposes.
+        Create a realistic-sized PNG file for demonstration purposes.
         
         Args:
             file_path: Path where to save the PNG file
             filename: Name of the file (for metadata)
         """
         try:
-            # PNG file signature (8 bytes)
-            png_signature = b'\x89PNG\r\n\x1a\n'
+            import matplotlib.pyplot as plt
+            import numpy as np
             
-            # IHDR chunk for a 1x1 pixel image
-            ihdr_data = b'\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde'
+            # Create a realistic visualization based on filename
+            fig, ax = plt.subplots(figsize=(12, 8))
             
-            # IDAT chunk (minimal compressed data for 1x1 pixel)
-            idat_data = b'\x00\x00\x00\x0cIDAT\x08\x1dc\xf8\x0f\x00\x00\x00\xff\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb'
-            
-            # IEND chunk
-            iend_data = b'\x00\x00\x00\x00IEND\xaeB`\x82'
-            
-            # Combine all chunks
-            png_data = png_signature + ihdr_data + idat_data + iend_data
-            
-            # Write the PNG file
-            with open(file_path, 'wb') as f:
-                f.write(png_data)
+            if 'training_metrics' in filename:
+                # Simulate training metrics plot
+                epochs = np.arange(1, 11)
+                train_loss = 5.0 * np.exp(-epochs * 0.3) + 0.5 + 0.1 * np.random.randn(10)
+                val_loss = 5.2 * np.exp(-epochs * 0.25) + 0.6 + 0.15 * np.random.randn(10)
                 
+                ax.plot(epochs, train_loss, 'b-', label='Training Loss', linewidth=2)
+                ax.plot(epochs, val_loss, 'r-', label='Validation Loss', linewidth=2)
+                ax.set_xlabel('Epoch')
+                ax.set_ylabel('Loss')
+                ax.set_title('Training Metrics (Cloud Training)')
+                ax.legend()
+                ax.grid(True, alpha=0.3)
+                
+            elif 'gradient_flow' in filename:
+                # Simulate gradient flow plot
+                layers = np.arange(1, 13)
+                gradients = np.random.exponential(0.1, 12)
+                gradients[6:] *= 0.5  # Decoder layers typically have smaller gradients
+                
+                ax.bar(layers, gradients, color='skyblue', alpha=0.7)
+                ax.set_xlabel('Layer')
+                ax.set_ylabel('Gradient Magnitude')
+                ax.set_title('Gradient Flow Analysis (Cloud Training)')
+                ax.grid(True, alpha=0.3)
+                
+            elif 'evaluation_metrics' in filename:
+                # Simulate evaluation metrics plot
+                metrics = ['BLEU-1', 'BLEU-2', 'BLEU-3', 'BLEU-4', 'METEOR', 'ROUGE-L']
+                scores = [0.85, 0.78, 0.72, 0.65, 0.82, 0.80]
+                
+                bars = ax.bar(metrics, scores, color='lightgreen', alpha=0.7)
+                ax.set_ylabel('Score')
+                ax.set_title('Evaluation Metrics (Cloud Training)')
+                ax.set_ylim(0, 1)
+                
+                # Add value labels on bars
+                for bar, score in zip(bars, scores):
+                    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01,
+                           f'{score:.2f}', ha='center', va='bottom')
+                
+            else:
+                # Generic plot
+                x = np.linspace(0, 10, 100)
+                y = np.sin(x) * np.exp(-x/5)
+                ax.plot(x, y, 'purple', linewidth=2)
+                ax.set_xlabel('X')
+                ax.set_ylabel('Y')
+                ax.set_title(f'Cloud Training Visualization: {filename}')
+                ax.grid(True, alpha=0.3)
+            
+            plt.tight_layout()
+            plt.savefig(file_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            
+        except ImportError:
+            # Fallback: create a larger PNG using PIL if matplotlib is not available
+            try:
+                from PIL import Image, ImageDraw, ImageFont
+                
+                # Create a larger image (800x600)
+                img = Image.new('RGB', (800, 600), color='white')
+                draw = ImageDraw.Draw(img)
+                
+                # Add some text
+                text = f"Cloud Training Visualization\n{filename}\nGenerated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                
+                try:
+                    font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 24)
+                except:
+                    font = ImageFont.load_default()
+                
+                # Draw text
+                draw.text((50, 250), text, fill='black', font=font)
+                
+                # Draw some simple graphics
+                draw.rectangle([50, 50, 750, 200], outline='blue', width=3)
+                draw.ellipse([100, 300, 700, 500], outline='red', width=3)
+                
+                img.save(file_path, 'PNG')
+                
+            except ImportError:
+                # Final fallback: create a simple text file
+                with open(file_path, 'w') as f:
+                    f.write(f"# Sample visualization file: {filename}\n")
+                    f.write(f"# Created at: {datetime.now().isoformat()}\n")
+                    f.write(f"# This is a demo file - real visualizations would be PNG images\n")
+                    
         except Exception as e:
             # Fallback: create a simple text file if PNG creation fails
             with open(file_path, 'w') as f:
