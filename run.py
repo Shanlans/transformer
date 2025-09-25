@@ -660,6 +660,49 @@ class UnifiedTrainer:
         else:
             print("❌ Failed to stop cloud training")
     
+    def check_config_overwrite(self, config_path: str):
+        """Check if overwriting a config would affect experiment info."""
+        print("\n" + "="*80)
+        print("🔍 CONFIG OVERWRITE ANALYSIS")
+        print("="*80)
+        
+        try:
+            from src.utils.config_manager import ConfigManager
+            
+            # Load the config to analyze
+            config_manager = ConfigManager(config_path)
+            analysis = config_manager.check_config_overwrite(config_path)
+            
+            print(f"📁 Config file: {config_path}")
+            print(f"📋 File exists: {analysis['file_exists']}")
+            print(f"🔬 Has experiment info: {analysis['has_experiment_info']}")
+            print(f"🛡️  Would preserve: {analysis['would_preserve']}")
+            
+            if analysis['has_experiment_info']:
+                print("\n📊 Experiment Info:")
+                exp_info = analysis['experiment_info']
+                print(f"   Name: {exp_info.get('name', 'N/A')}")
+                print(f"   Description: {exp_info.get('description', 'N/A')}")
+                print(f"   Created: {exp_info.get('created_at', 'N/A')}")
+                print(f"   Timestamp ID: {exp_info.get('timestamp_id', 'N/A')}")
+                print(f"   Environment: {exp_info.get('training_environment', 'N/A')}")
+                
+                if 'gpu_info' in exp_info:
+                    gpu_info = exp_info['gpu_info']
+                    print(f"   GPU: {gpu_info.get('name', gpu_info.get('type', 'N/A'))}")
+            
+            print("\n💡 Recommendations:")
+            for rec in analysis['recommendations']:
+                print(f"   • {rec}")
+            
+            if not analysis['would_preserve']:
+                print("\n⚠️  WARNING: Overwriting this config would lose experiment info!")
+                print("   Consider using preserve_experiment_info=True")
+                print("   Or create a new experiment instead of overwriting")
+            
+        except Exception as e:
+            print(f"❌ Error analyzing config: {e}")
+    
     def list_config_versions(self):
         """List all configuration versions."""
         print("\n" + "="*80)
@@ -780,6 +823,9 @@ Examples:
     parser.add_argument('--cloud-status', action='store_true', help='Check cloud training status')
     parser.add_argument('--cloud-logs', action='store_true', help='Show cloud training logs')
     parser.add_argument('--cloud-stop', action='store_true', help='Stop cloud training')
+    
+    # Config management
+    parser.add_argument('--check-config-overwrite', help='Check if overwriting config would affect experiment info')
     
     # Training options
     parser.add_argument('--experiment', help='Experiment name for training')
@@ -940,6 +986,10 @@ Examples:
     
     elif args.cloud_stop:
         trainer.stop_cloud_training()
+        success = True
+    
+    elif args.check_config_overwrite:
+        trainer.check_config_overwrite(args.check_config_overwrite)
         success = True
     
     else:

@@ -17,6 +17,8 @@ class ExperimentConfig:
     version: str
     created_at: Optional[str] = None
     timestamp_id: Optional[str] = None
+    training_environment: Optional[str] = None
+    gpu_info: Optional[Dict[str, Any]] = None
 
 
 @dataclass
@@ -237,14 +239,86 @@ class ConfigManager:
         """Get the loaded configuration."""
         return self.config
     
-    def save_config(self, save_path: str):
-        """Save current configuration to JSON file."""
+    def save_config(self, save_path: str, preserve_experiment_info: bool = True):
+        """
+        Save current configuration to JSON file.
+        
+        Args:
+            save_path: Path to save the configuration
+            preserve_experiment_info: Whether to preserve existing experiment info
+        """
         config_dict = asdict(self.config)
+        
+        # If preserving experiment info and file exists, merge experiment info
+        if preserve_experiment_info and os.path.exists(save_path):
+            try:
+                with open(save_path, 'r', encoding='utf-8') as f:
+                    existing_config = json.load(f)
+                
+                # Preserve experiment info from existing config
+                if 'experiment' in existing_config:
+                    existing_experiment = existing_config['experiment']
+                    # Only preserve non-training-specific experiment info
+                    preserved_keys = ['name', 'description', 'version', 'created_at', 'timestamp_id', 'training_environment', 'gpu_info']
+                    for key in preserved_keys:
+                        if key in existing_experiment:
+                            config_dict['experiment'][key] = existing_experiment[key]
+                    
+                    print(f"ℹ️  Preserved experiment info from existing config")
+            except Exception as e:
+                print(f"⚠️  Could not preserve experiment info: {e}")
         
         with open(save_path, 'w', encoding='utf-8') as f:
             json.dump(config_dict, f, indent=2, ensure_ascii=False)
         
         print(f"Configuration saved to: {save_path}")
+    
+    def check_config_overwrite(self, config_path: str) -> Dict[str, Any]:
+        """
+        Check if overwriting a config would affect experiment info.
+        
+        Args:
+            config_path: Path to the configuration file
+            
+        Returns:
+            Dictionary with overwrite analysis
+        """
+        analysis = {
+            'file_exists': os.path.exists(config_path),
+            'has_experiment_info': False,
+            'experiment_info': None,
+            'would_preserve': True,
+            'recommendations': []
+        }
+        
+        if analysis['file_exists']:
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    existing_config = json.load(f)
+                
+                if 'experiment' in existing_config:
+                    analysis['has_experiment_info'] = True
+                    analysis['experiment_info'] = existing_config['experiment']
+                    
+                    # Check if experiment info would be preserved
+                    current_config_dict = asdict(self.config)
+                    if 'experiment' in current_config_dict:
+                        preserved_keys = ['name', 'description', 'version', 'created_at', 'timestamp_id', 'training_environment', 'gpu_info']
+                        for key in preserved_keys:
+                            if key in existing_config['experiment']:
+                                if key not in current_config_dict['experiment'] or current_config_dict['experiment'][key] != existing_config['experiment'][key]:
+                                    analysis['would_preserve'] = False
+                                    analysis['recommendations'].append(f"Key '{key}' would be overwritten")
+                    
+                    if analysis['would_preserve']:
+                        analysis['recommendations'].append("Experiment info would be preserved")
+                    else:
+                        analysis['recommendations'].append("Consider using preserve_experiment_info=True")
+                        
+            except Exception as e:
+                analysis['recommendations'].append(f"Error reading config: {e}")
+        
+        return analysis
     
     def update_config(self, updates: Dict[str, Any]):
         """

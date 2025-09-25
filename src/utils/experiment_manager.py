@@ -88,7 +88,7 @@ class ExperimentManager:
         # Apply overrides
         config_dict = self._config_to_dict(base_config)
         
-        # Update experiment info with timestamp
+        # Update experiment info with timestamp (separate from training config)
         config_dict['experiment']['name'] = name
         config_dict['experiment']['description'] = description
         config_dict['experiment']['created_at'] = timestamp.isoformat()
@@ -127,6 +127,30 @@ class ExperimentManager:
                 'type': 'unknown',
                 'error': str(e)
             }
+        
+        # Create separate metadata file for experiment info
+        experiment_metadata = {
+            'experiment_info': {
+                'name': name,
+                'description': description,
+                'created_at': timestamp.isoformat(),
+                'version': "1.0",
+                'timestamp_id': timestamp_id,
+                'training_environment': training_environment,
+                'gpu_info': config_dict['experiment']['gpu_info']
+            },
+            'config_info': {
+                'base_config_path': base_config_path,
+                'config_file': experiment_filename,
+                'created_at': timestamp.isoformat()
+            }
+        }
+        
+        # Save experiment metadata separately
+        metadata_filename = f"{base_name}_{timestamp_id}_metadata.json"
+        metadata_path = os.path.join(self.configs_dir, metadata_filename)
+        with open(metadata_path, 'w', encoding='utf-8') as f:
+            json.dump(experiment_metadata, f, indent=2, ensure_ascii=False)
         
         # Apply user overrides
         for key, value in overrides.items():
