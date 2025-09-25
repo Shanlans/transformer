@@ -1,15 +1,16 @@
 {
   "experiment": {
-    "name": "my_experiment",
-    "description": "",
+    "name": "transformer_translation",
+    "description": "English-German translation using Transformer",
     "version": "1.0",
-    "created_at": "2025-09-24T08:10:28.658491"
+    "created_at": null,
+    "timestamp_id": null
   },
   "data": {
     "train_data_path": "data/train.json",
     "max_length": 20,
     "train_split": 0.8,
-    "batch_size": 16,
+    "batch_size": 32,
     "num_workers": 0,
     "shuffle": true
   },
@@ -89,5 +90,6 @@
     "print_every_n_epochs": 1,
     "save_metrics_every_n_epochs": 5,
     "detailed_progress": true
-  }
+  },
+  "resume": null
 }

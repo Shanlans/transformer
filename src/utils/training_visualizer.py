@@ -32,17 +32,24 @@ class TrainingVisualizer:
     - Gradient flow analysis
     """
     
-    def __init__(self, save_dir: str = "visualizations", figsize: Tuple[int, int] = (12, 8)):
+    def __init__(self, save_dir: str = "visualizations", figsize: Tuple[int, int] = (12, 8), 
+                 previous_training_history: Optional[List[Dict]] = None):
         """
         Initialize training visualizer.
         
         Args:
             save_dir: Directory to save visualizations
             figsize: Default figure size for plots
+            previous_training_history: Previous training history to continue from
         """
         self.save_dir = save_dir
         self.figsize = figsize
         self.metrics_history = []
+        
+        # Load previous training history if provided
+        if previous_training_history:
+            self.metrics_history = previous_training_history.copy()
+            print(f"📊 Loaded previous training history: {len(previous_training_history)} epochs")
         
         # Create save directory
         os.makedirs(save_dir, exist_ok=True)
@@ -61,7 +68,40 @@ class TrainingVisualizer:
         print(f"  Metrics directory: {self.metrics_dir}")
         print(f"  Attention directory: {self.attention_dir}")
         print(f"  Evaluation directory: {self.evaluation_dir}")
+        if previous_training_history:
+            print(f"  Previous epochs loaded: {len(previous_training_history)}")
     
+    def load_previous_training_history(self, training_history_path: str) -> bool:
+        """
+        Load previous training history from JSON file.
+        
+        Args:
+            training_history_path: Path to training history JSON file
+            
+        Returns:
+            True if loaded successfully, False otherwise
+        """
+        try:
+            if os.path.exists(training_history_path):
+                with open(training_history_path, 'r', encoding='utf-8') as f:
+                    previous_history = json.load(f)
+                
+                if isinstance(previous_history, list) and previous_history:
+                    self.metrics_history = previous_history.copy()
+                    print(f"📊 Loaded previous training history: {len(previous_history)} epochs")
+                    print(f"   From: {training_history_path}")
+                    return True
+                else:
+                    print(f"⚠️  Training history file is empty or invalid: {training_history_path}")
+                    return False
+            else:
+                print(f"⚠️  Training history file not found: {training_history_path}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error loading training history: {e}")
+            return False
+
     def add_metrics(self, epoch: int, metrics: Dict[str, float]):
         """
         Add metrics for an epoch.

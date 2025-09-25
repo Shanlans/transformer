@@ -89,6 +89,12 @@ run_*/
 training_history.json
 config.json
 
+# Cloud training files
+cloud_config.json
+cloud_results/
+temp_training_config.json
+*.log
+
 # Test output files
 test_model.pt
 transformer_model.pt

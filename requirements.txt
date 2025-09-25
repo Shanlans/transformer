@@ -16,9 +16,22 @@ MarkupSafe==2.1.5
 mpmath==1.3.0
 
 # Additional useful packages for ML/DL development
-matplotlib
-jupyter
-pandas
-scikit-learn
-tqdm
+matplotlib>=3.5.0
+jupyter>=1.0.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+tqdm>=4.64.0
+torchsummary>=1.5.1
+torchinfo>=1.7.0
+
+# Google Cloud and Colab integration (optional)
+google-cloud-storage>=2.10.0
+google-auth>=2.17.0
+colabcode>=0.1.0
+
+# Additional utilities for training and visualization
+seaborn>=0.11.0
+plotly>=5.0.0
+tensorboard>=2.8.0
+wandb>=0.12.0
 

@@ -3,7 +3,8 @@
     "name": "transformer_translation",
     "description": "English-German translation using Transformer",
     "version": "1.0",
-    "created_at": null
+    "created_at": null,
+    "timestamp_id": null
   },
   "data": {
     "train_data_path": "data/train.json",
@@ -89,5 +90,6 @@
     "print_every_n_epochs": 1,
     "save_metrics_every_n_epochs": 5,
     "detailed_progress": true
-  }
+  },
+  "resume": null
 }

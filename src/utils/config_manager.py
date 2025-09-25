@@ -117,6 +117,15 @@ class LoggingConfig:
 
 
 @dataclass
+class ResumeConfig:
+    """Resume training configuration."""
+    checkpoint_path: str
+    original_experiment: str
+    resume_timestamp: str
+    validation_result: Dict[str, Any]
+
+
+@dataclass
 class TrainingConfigManager:
     """Complete training configuration manager."""
     experiment: ExperimentConfig
@@ -130,6 +139,7 @@ class TrainingConfigManager:
     visualization: VisualizationConfig
     evaluation: EvaluationConfig
     logging: LoggingConfig
+    resume: Optional[ResumeConfig] = None
 
 
 class ConfigManager:
@@ -157,6 +167,10 @@ class ConfigManager:
             config_dict = json.load(f)
         
         # Validate and create configuration objects
+        resume_config = None
+        if 'resume' in config_dict and config_dict['resume'] is not None:
+            resume_config = ResumeConfig(**config_dict['resume'])
+        
         self.config = TrainingConfigManager(
             experiment=ExperimentConfig(**config_dict['experiment']),
             data=DataConfig(**config_dict['data']),
@@ -168,7 +182,8 @@ class ConfigManager:
             system=SystemConfig(**config_dict['system']),
             visualization=VisualizationConfig(**config_dict['visualization']),
             evaluation=EvaluationConfig(**config_dict['evaluation']),
-            logging=LoggingConfig(**config_dict['logging'])
+            logging=LoggingConfig(**config_dict['logging']),
+            resume=resume_config
         )
         
         # Validate configuration
@@ -278,8 +293,11 @@ class ConfigManager:
         
         for section, params in config_dict.items():
             print(f"\n{section.upper()}:")
-            for key, value in params.items():
-                print(f"  {key}: {value}")
+            if params is not None:
+                for key, value in params.items():
+                    print(f"  {key}: {value}")
+            else:
+                print("  None")
         
         print("=" * 60)
 

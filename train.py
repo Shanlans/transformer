@@ -48,7 +48,8 @@ def create_datasets(config):
     train_size = int(config.data.train_split * dataset_size)
     val_size = dataset_size - train_size
     
-    train_dataset, val_dataset = torch.utils.data.random_split(
+    from torch.utils.data import random_split
+    train_dataset, val_dataset = random_split(
         full_dataset, [train_size, val_size]
     )
     
@@ -226,6 +227,27 @@ def main():
     # Set evaluator if evaluation is enabled
     if config.evaluation.enabled:
         trainer.set_evaluator(full_dataset.tgt_vocab, full_dataset.tgt_idx2word)
+    
+    # Check for resume configuration
+    if hasattr(config, 'resume') and config.resume:
+        print(f"\n🔄 RESUME TRAINING DETECTED")
+        print(f"{'='*60}")
+        print(f"Resuming from checkpoint: {config.resume.checkpoint_path}")
+        print(f"Original experiment: {config.resume.original_experiment}")
+        print(f"Resume timestamp: {config.resume.resume_timestamp}")
+        
+        # Load model and previous training history
+        trainer.load_model(config.resume.checkpoint_path, load_training_history=True)
+        
+        # Show validation result if available
+        validation_result = config.resume.validation_result
+        print(f"\n📊 Validation Results:")
+        print(f"  Status: {'✅ PASSED' if validation_result['is_valid'] else '❌ FAILED'}")
+        if validation_result['non_structural_changes']:
+            print(f"  Non-structural changes: {len(validation_result['non_structural_changes'])}")
+            for change in validation_result['non_structural_changes']:
+                print(f"    - {change['section']}.{change['parameter']}: {change['original']} → {change['new']}")
+        print(f"{'='*60}")
     
     # Print training summary
     print_training_summary(config)

@@ -16,6 +16,8 @@ transformer/
 │   └── utils/                  # Utility modules
 │       ├── config_manager.py  # Configuration management
 │       ├── checkpoint_manager.py  # Checkpoint management
+│       ├── config_version_manager.py  # Configuration versioning
+│       ├── experiment_manager.py  # Experiment management
 │       ├── loss_functions.py  # Loss functions
 │       ├── training_visualizer.py  # Training visualization
 │       └── evaluation_metrics.py  # Evaluation metrics
@@ -27,76 +29,128 @@ transformer/
 │   ├── visualizations/        # Test visualizations
 │   └── README_testing.md     # Testing documentation
 ├── examples/                  # Example scripts
-│   ├── create_sample_dataset.py
-│   ├── manage_checkpoints.py
-│   └── train_transformer.py
+│   └── create_sample_dataset.py
 ├── docs/                      # Documentation
-│   ├── DEVELOPMENT_GUIDE.md
-│   ├── git_workflow.md
-│   ├── commit_template.md
-│   └── setup_git_manual.md
+│   └── DEVELOPMENT_GUIDE.md
 ├── data/                      # Sample data
 │   ├── train.json
 │   ├── train.en
 │   └── train.de
 ├── checkpoints/               # Model checkpoints
+├── experiments/               # Experiment configurations
+│   ├── configs/              # Experiment config files
+│   └── results/              # Experiment results
+├── config_history/           # Configuration version history
 ├── train.py                   # Main training script
 ├── training_config.json       # Training configuration
+├── run.py                     # Unified training and management entry point
 ├── requirements.txt           # Python dependencies
-├── TRAINING_GUIDE.md         # Training documentation
-├── CHECKPOINT_MANAGEMENT.md   # Checkpoint management guide
+├── environment.yml            # Conda environment specification
+├── install.py                 # Automated installation script
+├── setup.sh                   # Shell-based installation script
+├── UNIFIED_TRAINING_GUIDE.md  # Complete unified training system documentation
 └── README.md                 # This file
 ```
 
 ## 🚀 Quick Start
 
-### 1. Environment Setup
-```bash
-# Activate conda environment
-conda activate torch2.5
+### 1. Installation Options
 
-# Install dependencies
+#### Option A: Automated Installation (Recommended)
+```bash
+# Run the automated installation script
+python install.py
+```
+
+#### Option B: Conda Environment (Recommended for ML/DL)
+```bash
+# Create conda environment from environment.yml
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate torch2.5
+```
+
+#### Option C: Manual Installation
+```bash
+# Install PyTorch (choose one based on your system)
+# For CUDA support:
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# For CPU only:
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+# Install other dependencies
 pip install -r requirements.txt
+```
+
+#### Option D: Shell Script (Linux/macOS)
+```bash
+# Make the script executable
+chmod +x setup.sh
+
+# Run the setup script
+./setup.sh
+
+# Or with custom options
+./setup.sh --env-name my_env --python-version 3.9
 ```
 
 ### 2. Run Training
 ```bash
 # Train with default configuration
-python train.py
+python run.py --train --use-default
 
-# Or train with custom configuration
-python examples/train_transformer.py --epochs 10 --batch_size 16
+# Train with specific experiment
+python run.py --train --experiment my_experiment
+
+# Train with specific config file
+python run.py --train --config experiments/configs/my_experiment.json
+
+# Force local training
+python run.py --train --experiment my_experiment --force-local
+
+# Force cloud training
+python run.py --train --experiment my_experiment --force-cloud
 ```
 
-### 3. Manage Experiments
+### 3. Unified Training and Management System
 ```bash
 # List all experiments
-python manage_experiments.py list
+python run.py --list-experiments
 
-# Create a new experiment
-python manage_experiments.py create --name small_test --d_model 128 --epochs 5
+# Show experiment details
+python run.py --show-experiment small_test
 
-# Compare experiments
-python manage_experiments.py compare --names small_test medium_exp
+# Create new experiment
+python run.py --create-experiment --name small_test --description "Small model for testing"
 
-# Run an experiment
-python manage_experiments.py run --name small_test
+# List all checkpoints
+python run.py --list-checkpoints
+
+# List checkpoints for specific experiment
+python run.py --list-checkpoints --experiment small_test
+
+# Create resume config with modified hyperparameters
+python run.py --create-resume --experiment small_test --checkpoint checkpoints/run_20250925_070047/best_model_epoch_005.pt --overrides '{"training": {"learning_rate": 0.0002, "epochs": 10}}'
+
+# Validate hyperparameter changes
+python run.py --validate-changes --experiment small_test --overrides '{"training": {"learning_rate": 0.0002}}'
+
+# List configuration versions
+python run.py --list-config-versions
+
+# Cleanup old checkpoints
+python run.py --cleanup --keep-runs 3 --keep-checkpoints 5
+
+# Resume training with new config
+python run.py --train --config experiments/configs/resume_small_test_20250925_073041.json
 ```
 
-### 4. Manage Checkpoints
-```bash
-# List all training runs
-python examples/manage_checkpoints.py list-runs
-
-# Clean up old checkpoints
-python examples/manage_checkpoints.py cleanup-all
-```
 
 ## 📖 Documentation
 
-- **[Training Guide](TRAINING_GUIDE.md)** - Complete training documentation
-- **[Experiment Management](EXPERIMENT_MANAGEMENT.md)** - Experiment configuration system
-- **[Checkpoint Management](CHECKPOINT_MANAGEMENT.md)** - Checkpoint system guide
+- **[Unified Training Guide](UNIFIED_TRAINING_GUIDE.md)** - Complete unified training and management system documentation
 - **[Testing Guide](tests/README_testing.md)** - Testing documentation
 - **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Development workflow
 
@@ -135,12 +189,16 @@ python examples/manage_checkpoints.py cleanup-all
 - ✅ **Experiment Comparison** - Side-by-side comparison of experiments
 - ✅ **Template System** - Pre-defined configuration templates
 - ✅ **Version Control** - Track experiment history and changes
+- ✅ **Timestamp Linkage** - Link experiment configs with checkpoint timestamps
+- ✅ **Integrity Validation** - Prevent manual config modification
 
 ### Checkpoint Management
 - ✅ **Timestamped Runs** - Organized checkpoint storage
 - ✅ **Metadata Tracking** - Comprehensive checkpoint metadata
 - ✅ **Cleanup Tools** - Automated checkpoint cleanup
 - ✅ **Model Resuming** - Resume training from checkpoints
+- ✅ **Hyperparameter Validation** - Structural vs non-structural parameter validation
+- ✅ **Resume Configuration** - Generate configs for resuming with modified parameters
 
 ## 🛠️ Configuration
 

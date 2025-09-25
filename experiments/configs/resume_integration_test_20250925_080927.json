@@ -1,9 +1,10 @@
 {
   "experiment": {
-    "name": "transformer_translation",
-    "description": "English-German translation using Transformer",
+    "name": "integration_test",
+    "description": "Integration test for unified training system",
     "version": "1.0",
-    "created_at": null
+    "created_at": "2025-09-25T08:06:24.423960",
+    "timestamp_id": "20250925_080624"
   },
   "data": {
     "train_data_path": "data/train.json",
@@ -24,7 +25,7 @@
   },
   "training": {
     "epochs": 2,
-    "learning_rate": 0.0001,
+    "learning_rate": 0.0002,
     "weight_decay": 0.01,
     "gradient_clip_norm": 1.0,
     "early_stopping_patience": 10,
@@ -89,5 +90,26 @@
     "print_every_n_epochs": 1,
     "save_metrics_every_n_epochs": 5,
     "detailed_progress": true
+  },
+  "resume": {
+    "checkpoint_path": "checkpoints/run_20250925_080624/best_model_epoch_002.pt",
+    "original_experiment": "integration_test",
+    "resume_timestamp": "2025-09-25T08:09:27.069009",
+    "validation_result": {
+      "is_valid": true,
+      "structural_changes": [],
+      "non_structural_changes": [
+        {
+          "section": "training",
+          "parameter": "learning_rate",
+          "original": 0.0001,
+          "new": 0.0002
+        }
+      ],
+      "errors": [],
+      "warnings": [
+        "Non-structural parameter changed: training.learning_rate (0.0001 → 0.0002)"
+      ]
+    }
   }
 }

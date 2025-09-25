@@ -341,6 +341,7 @@ class TransformerTrainer:
             epoch_metrics = {**train_metrics, **val_metrics}
             epoch_metrics['epoch'] = epoch + 1
             epoch_metrics['epoch_time'] = time.time() - epoch_start_time
+            epoch_metrics['timestamp'] = datetime.now().isoformat()
             metrics_history.append(epoch_metrics)
             
             # Add metrics to visualizer
@@ -439,12 +440,13 @@ class TransformerTrainer:
         torch.save(checkpoint, path)
         print(f"Model saved to {path}")
     
-    def load_model(self, path: str):
+    def load_model(self, path: str, load_training_history: bool = True):
         """
         Load model checkpoint.
         
         Args:
             path: Path to load the model from
+            load_training_history: Whether to load previous training history for visualization
         """
         checkpoint_data = self.checkpoint_manager.load_checkpoint(
             checkpoint_path=path,
@@ -465,6 +467,21 @@ class TransformerTrainer:
                 self.train_losses.append(metrics['train_loss'])
             if 'val_loss' in metrics:
                 self.val_losses.append(metrics['val_loss'])
+        
+        # Load previous training history for visualization
+        if load_training_history:
+            run_dir = os.path.dirname(path)
+            training_history_path = os.path.join(run_dir, 'training_history.json')
+            
+            if os.path.exists(training_history_path):
+                print(f"📊 Loading previous training history for visualization...")
+                success = self.visualizer.load_previous_training_history(training_history_path)
+                if success:
+                    print(f"✅ Previous training history loaded successfully")
+                else:
+                    print(f"⚠️  Could not load previous training history")
+            else:
+                print(f"⚠️  No previous training history found at: {training_history_path}")
         
         print(f"Model loaded from {path}")
         print(f"Resumed from epoch {self.current_epoch + 1}")
@@ -515,7 +532,7 @@ class TransformerTrainer:
     
     def evaluate_model(
         self,
-        dataloader: torch.utils.data.DataLoader,
+        dataloader: DataLoader,
         max_samples: Optional[int] = None
     ) -> Dict[str, float]:
         """
