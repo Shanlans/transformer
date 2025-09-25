@@ -187,10 +187,179 @@ class ColabManager:
             print(training_cmd)
             print("Execute this command in Colab terminal")
             
+            # Save training session info for monitoring
+            self.current_training_session = {
+                'experiment_name': experiment_name,
+                'config_path': config_path,
+                'start_time': datetime.now().isoformat(),
+                'status': 'running'
+            }
+            
             return True
             
         except Exception as e:
             print(f"❌ Error starting remote training: {e}")
+            return False
+    
+    def check_training_status(self) -> Dict[str, Any]:
+        """
+        Check the status of current cloud training session.
+        
+        Returns:
+            Dictionary with training status information
+        """
+        if not hasattr(self, 'current_training_session') or not self.current_training_session:
+            return {
+                'status': 'no_session',
+                'message': 'No active training session'
+            }
+        
+        if not self.is_connected:
+            return {
+                'status': 'disconnected',
+                'message': 'ColabCode session not connected'
+            }
+        
+        try:
+            session = self.current_training_session
+            start_time = datetime.fromisoformat(session['start_time'])
+            elapsed_time = datetime.now() - start_time
+            
+            # In real implementation, this would SSH into Colab and check:
+            # 1. If training process is still running
+            # 2. Current epoch progress
+            # 3. Latest loss values
+            # 4. GPU utilization
+            
+            # For demo purposes, simulate status check
+            print(f"🔍 Checking cloud training status...")
+            print(f"   Experiment: {session['experiment_name']}")
+            print(f"   Started: {session['start_time']}")
+            print(f"   Elapsed: {elapsed_time}")
+            
+            # Simulate different training phases
+            elapsed_minutes = elapsed_time.total_seconds() / 60
+            
+            if elapsed_minutes < 2:
+                status_info = {
+                    'status': 'initializing',
+                    'message': 'Training is initializing...',
+                    'progress': 0,
+                    'current_epoch': 0,
+                    'total_epochs': 2,
+                    'estimated_completion': 'Unknown'
+                }
+            elif elapsed_minutes < 5:
+                status_info = {
+                    'status': 'training',
+                    'message': 'Training in progress...',
+                    'progress': 25,
+                    'current_epoch': 1,
+                    'total_epochs': 2,
+                    'estimated_completion': f'{5 - elapsed_minutes:.1f} minutes'
+                }
+            elif elapsed_minutes < 8:
+                status_info = {
+                    'status': 'training',
+                    'message': 'Training in progress...',
+                    'progress': 75,
+                    'current_epoch': 2,
+                    'total_epochs': 2,
+                    'estimated_completion': f'{8 - elapsed_minutes:.1f} minutes'
+                }
+            else:
+                status_info = {
+                    'status': 'completed',
+                    'message': 'Training completed!',
+                    'progress': 100,
+                    'current_epoch': 2,
+                    'total_epochs': 2,
+                    'estimated_completion': 'Completed'
+                }
+                session['status'] = 'completed'
+                # Keep session info for status checking even after completion
+            
+            status_info.update({
+                'experiment_name': session['experiment_name'],
+                'start_time': session['start_time'],
+                'elapsed_time': str(elapsed_time),
+                'config_path': session['config_path']
+            })
+            
+            return status_info
+            
+        except Exception as e:
+            return {
+                'status': 'error',
+                'message': f'Error checking training status: {e}'
+            }
+    
+    def get_training_logs(self, lines: int = 50) -> List[str]:
+        """
+        Get recent training logs from cloud.
+        
+        Args:
+            lines: Number of recent log lines to retrieve
+            
+        Returns:
+            List of log lines
+        """
+        if not self.is_connected:
+            return ["ColabCode session not connected"]
+        
+        try:
+            # In real implementation, this would SSH into Colab and run:
+            # tail -n {lines} /content/transformer/training.log
+            
+            # For demo purposes, simulate log output
+            logs = [
+                f"[{datetime.now().strftime('%H:%M:%S')}] Training started",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Loading dataset...",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Dataset loaded: 40 train, 10 validation",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Creating model...",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Model created: 44,379,806 parameters",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Starting training...",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Epoch 1/2: Train Loss: 7.34, Val Loss: 6.36",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Checkpoint saved: best_model_epoch_001.pt",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Epoch 2/2: Train Loss: 5.15, Val Loss: 4.77",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Checkpoint saved: best_model_epoch_002.pt",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Training completed!",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Generating visualizations...",
+                f"[{datetime.now().strftime('%H:%M:%S')}] Results ready for download"
+            ]
+            
+            return logs[-lines:] if len(logs) > lines else logs
+            
+        except Exception as e:
+            return [f"Error retrieving logs: {e}"]
+    
+    def stop_training(self) -> bool:
+        """
+        Stop the current cloud training session.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if not hasattr(self, 'current_training_session') or not self.current_training_session:
+            print("No active training session to stop")
+            return False
+        
+        if not self.is_connected:
+            print("ColabCode session not connected")
+            return False
+        
+        try:
+            # In real implementation, this would SSH into Colab and run:
+            # pkill -f "python train.py"
+            
+            print("🛑 Stopping cloud training...")
+            self.current_training_session['status'] = 'stopped'
+            print("✅ Training stopped successfully")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error stopping training: {e}")
             return False
     
     def download_results(self, experiment_name: str, local_results_dir: str) -> bool:

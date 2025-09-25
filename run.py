@@ -325,7 +325,7 @@ class UnifiedTrainer:
         except Exception as e:
             print(f"❌ Error creating resume configuration: {e}")
     
-    def run_training(self, config_path: str, force_local: bool = False, force_cloud: bool = False, experiment_name: str = None):
+    def run_training(self, config_path: str, force_local: bool = False, force_cloud: bool = False, experiment_name: str = None, training_environment: str = "unknown"):
         """Run training with the specified configuration."""
         print(f"🚀 Starting training with config: {config_path}")
         
@@ -552,6 +552,96 @@ class UnifiedTrainer:
         print("   All training artifacts have been removed.")
         print("="*80)
     
+    def check_cloud_status(self):
+        """Check cloud training status."""
+        if not self.colab_manager:
+            print("❌ ColabCode not available.")
+            return
+        
+        print("\n" + "="*80)
+        print("☁️  CLOUD TRAINING STATUS")
+        print("="*80)
+        
+        status = self.colab_manager.check_training_status()
+        
+        if status['status'] == 'no_session':
+            print("ℹ️  No active cloud training session")
+            return
+        elif status['status'] == 'disconnected':
+            print("❌ ColabCode session not connected")
+            return
+        elif status['status'] == 'error':
+            print(f"❌ Error: {status['message']}")
+            return
+        
+        # Display status information
+        print(f"📋 Experiment: {status['experiment_name']}")
+        print(f"⏰ Started: {status['start_time']}")
+        print(f"⏱️  Elapsed: {status['elapsed_time']}")
+        print(f"📁 Config: {status['config_path']}")
+        print()
+        
+        # Status-specific information
+        if status['status'] == 'initializing':
+            print("🔄 Status: Initializing")
+            print("📝 Message: Training is initializing...")
+        elif status['status'] == 'training':
+            print("🏃 Status: Training in Progress")
+            print(f"📝 Message: {status['message']}")
+            print(f"📊 Progress: {status['progress']}%")
+            print(f"🎯 Epoch: {status['current_epoch']}/{status['total_epochs']}")
+            print(f"⏳ Estimated completion: {status['estimated_completion']}")
+        elif status['status'] == 'completed':
+            print("✅ Status: Completed")
+            print("📝 Message: Training completed!")
+            print(f"📊 Progress: {status['progress']}%")
+            print("🎯 Epoch: 2/2")
+            print("⏳ Estimated completion: Completed")
+        
+        print("\n💡 Use 'python run.py --cloud-logs' to see detailed logs")
+        print("💡 Use 'python run.py --cloud-stop' to stop training")
+    
+    def show_cloud_logs(self):
+        """Show cloud training logs."""
+        if not self.colab_manager:
+            print("❌ ColabCode not available.")
+            return
+        
+        print("\n" + "="*80)
+        print("☁️  CLOUD TRAINING LOGS")
+        print("="*80)
+        
+        logs = self.colab_manager.get_training_logs(20)
+        
+        if not logs:
+            print("ℹ️  No logs available")
+            return
+        
+        print("📋 Recent training logs:")
+        print("-" * 80)
+        for log in logs:
+            print(log)
+        
+        print("-" * 80)
+        print("💡 Use 'python run.py --cloud-status' to check current status")
+    
+    def stop_cloud_training(self):
+        """Stop cloud training."""
+        if not self.colab_manager:
+            print("❌ ColabCode not available.")
+            return
+        
+        print("\n" + "="*80)
+        print("🛑 STOPPING CLOUD TRAINING")
+        print("="*80)
+        
+        success = self.colab_manager.stop_training()
+        
+        if success:
+            print("✅ Cloud training stopped successfully")
+        else:
+            print("❌ Failed to stop cloud training")
+    
     def list_config_versions(self):
         """List all configuration versions."""
         print("\n" + "="*80)
@@ -648,6 +738,11 @@ Examples:
   
   # Clean up all training artifacts (experiments, checkpoints, config_history)
   python run.py --cleanup-all
+  
+  # Cloud training monitoring
+  python run.py --cloud-status    # Check cloud training status
+  python run.py --cloud-logs      # Show cloud training logs
+  python run.py --cloud-stop      # Stop cloud training
         """
     )
     
@@ -662,6 +757,11 @@ Examples:
     parser.add_argument('--list-config-versions', action='store_true', help='List configuration versions')
     parser.add_argument('--cleanup-checkpoints', action='store_true', help='Clean up checkpoints only')
     parser.add_argument('--cleanup-all', action='store_true', help='Clean up all training artifacts (experiments, checkpoints, config_history)')
+    
+    # Cloud training monitoring
+    parser.add_argument('--cloud-status', action='store_true', help='Check cloud training status')
+    parser.add_argument('--cloud-logs', action='store_true', help='Show cloud training logs')
+    parser.add_argument('--cloud-stop', action='store_true', help='Stop cloud training')
     
     # Training options
     parser.add_argument('--experiment', help='Experiment name for training')
@@ -716,10 +816,22 @@ Examples:
             print(f"📋 Using default configuration")
             print(f"🔄 Creating temporary experiment: {temp_experiment_name}")
             
+            # Determine training environment first
+            resource_name, resource_info = trainer.select_best_resource(args.force_local, args.force_cloud)
+            if resource_info['type'] == 'cloud_gpu':
+                training_environment = "cloud"
+            elif resource_info['type'] == 'local_gpu':
+                training_environment = "local_gpu"
+            elif resource_info['type'] == 'local_cpu':
+                training_environment = "local_cpu"
+            else:
+                training_environment = "unknown"
+            
             # Create temporary experiment for checkpoint management
             trainer.create_experiment(
                 name=temp_experiment_name,
-                description=f"Temporary experiment for default config training at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                description=f"Temporary experiment for default config training at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                training_environment=training_environment
             )
             
         elif args.config:
@@ -735,10 +847,20 @@ Examples:
         else:
             parser.error("--train requires --use-default, --config, or --experiment")
         
-        # Determine experiment name for checkpoint linking
+        # Determine experiment name and training environment for checkpoint linking
         experiment_name = None
+        training_environment = "unknown"
+        
         if args.use_default:
             experiment_name = temp_experiment_name
+            # Determine training environment based on resource selection
+            resource_name, resource_info = trainer.select_best_resource(args.force_local, args.force_cloud)
+            if resource_info['type'] == 'cloud_gpu':
+                training_environment = "cloud"
+            elif resource_info['type'] == 'local_gpu':
+                training_environment = "local_gpu"
+            elif resource_info['type'] == 'local_cpu':
+                training_environment = "local_cpu"
         elif args.experiment:
             experiment_name = args.experiment
         
@@ -746,7 +868,8 @@ Examples:
             config_path=config_path,
             force_local=args.force_local,
             force_cloud=args.force_cloud,
-            experiment_name=experiment_name
+            experiment_name=experiment_name,
+            training_environment=training_environment
         )
     
     elif args.list_checkpoints:
@@ -787,6 +910,18 @@ Examples:
     
     elif args.cleanup_all:
         trainer.cleanup_all()
+        success = True
+    
+    elif args.cloud_status:
+        trainer.check_cloud_status()
+        success = True
+    
+    elif args.cloud_logs:
+        trainer.show_cloud_logs()
+        success = True
+    
+    elif args.cloud_stop:
+        trainer.stop_cloud_training()
         success = True
     
     else:

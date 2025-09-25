@@ -54,6 +54,7 @@ class ExperimentManager:
         name: str,
         description: str = "",
         base_config_path: str = "training_config.json",
+        training_environment: str = "unknown",
         **overrides
     ) -> Tuple[str, str]:
         """
@@ -63,6 +64,7 @@ class ExperimentManager:
             name: Experiment name (will be used as filename)
             description: Experiment description
             base_config_path: Path to base configuration file
+            training_environment: Training environment (local, cloud, etc.)
             **overrides: Configuration overrides
             
         Returns:
@@ -92,6 +94,7 @@ class ExperimentManager:
         config_dict['experiment']['created_at'] = timestamp.isoformat()
         config_dict['experiment']['version'] = "1.0"
         config_dict['experiment']['timestamp_id'] = timestamp_id  # Add timestamp ID
+        config_dict['experiment']['training_environment'] = training_environment  # Add training environment
         
         # Apply user overrides
         for key, value in overrides.items():
@@ -107,8 +110,23 @@ class ExperimentManager:
             else:
                 config_dict[key] = value
         
-        # Save experiment configuration with timestamp
-        experiment_filename = f"{name}_{timestamp_id}.json"
+        # Save experiment configuration with timestamp and environment
+        # Check if name already contains the same timestamp_id to avoid duplication
+        if name.endswith(f"_{timestamp_id}"):
+            # Name already contains the timestamp, just add environment
+            base_name = name
+            env_suffix = f"_{training_environment}" if training_environment != "unknown" else ""
+            experiment_filename = f"{base_name}{env_suffix}.json"
+        else:
+            # Extract base name without timestamp if it contains a different timestamp
+            base_name = name
+            if '_' in name and len(name.split('_')[-1]) == 15:  # Check if last part is timestamp format
+                base_name = '_'.join(name.split('_')[:-1])
+            
+            # Add training environment to filename
+            env_suffix = f"_{training_environment}" if training_environment != "unknown" else ""
+            experiment_filename = f"{base_name}_{timestamp_id}{env_suffix}.json"
+        
         experiment_path = os.path.join(self.configs_dir, experiment_filename)
         
         with open(experiment_path, 'w', encoding='utf-8') as f:
