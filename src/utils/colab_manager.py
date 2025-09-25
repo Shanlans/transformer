@@ -275,6 +275,43 @@ class ColabManager:
             print(f"❌ Error downloading results: {e}")
             return False
     
+    def cleanup_temp_files(self) -> bool:
+        """
+        Clean up temporary files created during cloud training.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            print("🧹 Cleaning up temporary files...")
+            
+            # List of temporary files to clean up
+            temp_files = [
+                "transformer_project.zip",
+                "colab_test_experiment.ipynb"
+            ]
+            
+            cleaned_files = []
+            for temp_file in temp_files:
+                if os.path.exists(temp_file):
+                    try:
+                        os.remove(temp_file)
+                        cleaned_files.append(temp_file)
+                        print(f"  ✅ Removed: {temp_file}")
+                    except Exception as e:
+                        print(f"  ⚠️  Could not remove {temp_file}: {e}")
+            
+            if cleaned_files:
+                print(f"🧹 Cleanup completed: {len(cleaned_files)} files removed")
+            else:
+                print("🧹 No temporary files found to clean up")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error during cleanup: {e}")
+            return False
+    
     def _create_project_zip(self, project_dir: str, zip_name: str) -> bool:
         """
         Create a zip file of the project.

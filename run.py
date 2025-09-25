@@ -389,6 +389,10 @@ class UnifiedTrainer:
                 local_results_dir="./results"
             )
             print("✅ Results downloaded!")
+            
+            # Clean up temporary files
+            print("🧹 Cleaning up temporary files...")
+            self.colab_manager.cleanup_temp_files()
         else:
             print("❌ Cloud training failed.")
         
