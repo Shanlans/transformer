@@ -269,6 +269,27 @@ class UnifiedTrainer:
         except Exception as e:
             print(f"❌ Error creating experiment: {e}")
     
+    def create_derived_experiment(self, source_experiment: str, name: str, description: str, 
+                                new_environment: str = "local_gpu", **overrides):
+        """Create a derived experiment from an existing experiment."""
+        try:
+            experiment_path, timestamp_id = self.experiment_manager.create_derived_experiment(
+                source_experiment_name=source_experiment,
+                new_name=name,
+                new_description=description,
+                new_training_environment=new_environment,
+                **overrides
+            )
+            print(f"✅ Derived experiment created successfully!")
+            print(f"   Name: {name}")
+            print(f"   Description: {description}")
+            print(f"   Source experiment: {source_experiment}")
+            print(f"   New environment: {new_environment}")
+            print(f"   Config file: {experiment_path}")
+            print(f"   Timestamp ID: {timestamp_id}")
+        except Exception as e:
+            print(f"❌ Error creating derived experiment: {e}")
+    
     def list_checkpoints(self, experiment_name: Optional[str] = None):
         """List checkpoints."""
         print("\n" + "="*80)
@@ -761,6 +782,9 @@ Examples:
   # Create new experiment
   python run.py --create-experiment --name my_exp --description "My experiment"
   
+  # Create derived experiment from existing experiment
+  python run.py --create-derived-experiment --source-experiment cloud_training_20250926_082552 --name local_enhanced --description "Local enhanced training derived from cloud" --new-environment local_gpu --overrides '{"training": {"epochs": 5, "learning_rate": 0.0002}}'
+  
   # Train with default configuration
   python run.py --train --use-default
   
@@ -811,6 +835,7 @@ Examples:
     parser.add_argument('--list-experiments', action='store_true', help='List all experiments')
     parser.add_argument('--show-experiment', help='Show experiment details')
     parser.add_argument('--create-experiment', action='store_true', help='Create new experiment')
+    parser.add_argument('--create-derived-experiment', action='store_true', help='Create derived experiment from existing experiment')
     parser.add_argument('--train', action='store_true', help='Start training')
     parser.add_argument('--list-checkpoints', action='store_true', help='List checkpoints')
     parser.add_argument('--create-resume', action='store_true', help='Create resume configuration')
@@ -837,6 +862,8 @@ Examples:
     # Experiment creation options
     parser.add_argument('--name', help='Experiment name')
     parser.add_argument('--description', help='Experiment description')
+    parser.add_argument('--source-experiment', help='Source experiment name for derived experiment')
+    parser.add_argument('--new-environment', help='New training environment (local_gpu, local_cpu, cloud)')
     
     # Resume options
     parser.add_argument('--checkpoint', help='Checkpoint path for resume')
@@ -867,6 +894,23 @@ Examples:
         if not args.name or not args.description:
             parser.error("--create-experiment requires --name and --description")
         trainer.create_experiment(args.name, args.description)
+        success = True
+    
+    elif args.create_derived_experiment:
+        if not args.name or not args.description or not args.source_experiment:
+            parser.error("--create-derived-experiment requires --name, --description, and --source-experiment")
+        
+        overrides = {}
+        if args.overrides:
+            overrides = json.loads(args.overrides)
+        
+        trainer.create_derived_experiment(
+            source_experiment=args.source_experiment,
+            name=args.name,
+            description=args.description,
+            new_environment=args.new_environment or "local_gpu",
+            **overrides
+        )
         success = True
     
     elif args.train:

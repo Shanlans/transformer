@@ -274,7 +274,8 @@ def main():
     config_version_id = config_version_manager.auto_save_config_version(
         config_path=config_path,
         description=f"Training run starting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-        tags=["training", "manual_run"]
+        tags=["training", "manual_run"],
+        preserve_experiment_info=True
     )
     print(f"\nConfiguration version recorded: {config_version_id}")
     

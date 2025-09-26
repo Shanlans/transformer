@@ -55,7 +55,8 @@ class ConfigVersionManager:
         config_path: str,
         version_name: Optional[str] = None,
         description: str = "",
-        tags: List[str] = None
+        tags: List[str] = None,
+        preserve_experiment_info: bool = True
     ) -> str:
         """
         Save a configuration version.
@@ -72,6 +73,28 @@ class ConfigVersionManager:
         # Load configuration
         config_manager = ConfigManager(config_path)
         config = config_manager.get_config()
+        
+        # If preserving experiment info, merge it from the original config
+        if preserve_experiment_info:
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    original_config = json.load(f)
+                
+                # If original config has experiment info, merge it
+                if 'experiment' in original_config:
+                    from dataclasses import asdict
+                    current_config_dict = asdict(config)
+                    # Preserve experiment info from original config
+                    preserved_keys = ['name', 'description', 'version', 'created_at', 'timestamp_id', 'training_environment', 'gpu_info']
+                    for key in preserved_keys:
+                        if key in original_config['experiment']:
+                            current_config_dict['experiment'][key] = original_config['experiment'][key]
+                    
+                    # Update the config object
+                    config = TrainingConfigManager(**current_config_dict)
+                    print(f"ℹ️  Preserved experiment info from original config: {config_path}")
+            except Exception as e:
+                print(f"⚠️  Could not preserve experiment info: {e}")
         
         # Generate version ID using unified timestamp manager
         if version_name is None:
@@ -90,8 +113,11 @@ class ConfigVersionManager:
         else:
             version_id = version_name
         
-        # Create version metadata
-        version_metadata = {
+        # Create comprehensive config with metadata merged
+        config_dict = asdict(config)
+        
+        # Add version metadata to the config
+        config_dict['version_info'] = {
             'version_id': version_id,
             'created_at': datetime.now().isoformat(),
             'description': description,
@@ -100,14 +126,43 @@ class ConfigVersionManager:
             'config_hash': self._calculate_config_hash(config)
         }
         
-        # Save configuration copy
-        version_config_path = os.path.join(self.versions_dir, f"{version_id}.json")
-        config_manager.save_config(version_config_path)
+        # Add experiment history if this is a continuation
+        if preserve_experiment_info and os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    source_config = json.load(f)
+                
+                # Add source experiment info
+                if 'experiment' in source_config:
+                    config_dict['source_experiment'] = {
+                        'name': source_config['experiment'].get('name'),
+                        'description': source_config['experiment'].get('description'),
+                        'created_at': source_config['experiment'].get('created_at'),
+                        'timestamp_id': source_config['experiment'].get('timestamp_id'),
+                        'training_environment': source_config['experiment'].get('training_environment'),
+                        'gpu_info': source_config['experiment'].get('gpu_info'),
+                        'source_config_file': os.path.basename(config_path)
+                    }
+                    
+                    # Mark this as a continuation experiment
+                    config_dict['current_experiment'] = {
+                        'name': f"{source_config['experiment'].get('name', 'unknown')}_continuation",
+                        'description': f"Continuation of {source_config['experiment'].get('name', 'unknown')} experiment",
+                        'created_at': datetime.now().isoformat(),
+                        'timestamp_id': version_id.replace('config_', ''),
+                        'training_environment': 'local',  # Assume local continuation
+                        'config_file': f"{version_id}.json",
+                        'experiment_type': 'continuation',
+                        'source_experiment_id': source_config['experiment'].get('timestamp_id')
+                    }
+                    print(f"ℹ️  Added source experiment info and marked as continuation from: {config_path}")
+            except Exception as e:
+                print(f"⚠️  Could not add source experiment info: {e}")
         
-        # Save metadata
-        metadata_path = os.path.join(self.versions_dir, f"{version_id}_metadata.json")
-        with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(version_metadata, f, indent=2, ensure_ascii=False)
+        # Save merged configuration
+        version_config_path = os.path.join(self.versions_dir, f"{version_id}.json")
+        with open(version_config_path, 'w', encoding='utf-8') as f:
+            json.dump(config_dict, f, indent=2, ensure_ascii=False)
         
         print(f"Configuration version saved: {version_id}")
         print(f"  Description: {description}")
@@ -311,7 +366,8 @@ class ConfigVersionManager:
         config_path: str,
         checkpoint_run_dir: Optional[str] = None,
         description: str = "",
-        tags: List[str] = None
+        tags: List[str] = None,
+        preserve_experiment_info: bool = True
     ) -> str:
         """
         Automatically save configuration version and link with checkpoint if provided.
@@ -321,15 +377,17 @@ class ConfigVersionManager:
             checkpoint_run_dir: Checkpoint run directory (optional)
             description: Description of this configuration version
             tags: List of tags for this configuration
+            preserve_experiment_info: Whether to preserve experiment info from original config
             
         Returns:
             Version ID
         """
-        # Save configuration version
+        # Save configuration version with experiment info preservation
         version_id = self.save_config_version(
             config_path=config_path,
             description=description,
-            tags=tags
+            tags=tags,
+            preserve_experiment_info=preserve_experiment_info
         )
         
         # Link with checkpoint if provided

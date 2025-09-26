@@ -160,6 +160,14 @@ class ConfigManager:
         self.config = None
         self._load_config()
     
+    @classmethod
+    def from_config(cls, config: TrainingConfigManager):
+        """Create ConfigManager from existing config object."""
+        instance = cls.__new__(cls)
+        instance.config = config
+        instance.config_path = None  # No file path for in-memory config
+        return instance
+    
     def _load_config(self):
         """Load configuration from JSON file."""
         if not os.path.exists(self.config_path):

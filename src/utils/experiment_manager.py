@@ -88,13 +88,29 @@ class ExperimentManager:
         # Apply overrides
         config_dict = self._config_to_dict(base_config)
         
-        # Update experiment info with timestamp (separate from training config)
+        # Extract base name for metadata (before filename generation)
+        base_name = name
+        if '_' in name and len(name.split('_')[-1]) == 15:  # Check if last part is timestamp format
+            base_name = '_'.join(name.split('_')[:-1])
+        
+        # Update experiment info with timestamp and current experiment details
         config_dict['experiment']['name'] = name
         config_dict['experiment']['description'] = description
         config_dict['experiment']['created_at'] = timestamp.isoformat()
         config_dict['experiment']['version'] = "1.0"
         config_dict['experiment']['timestamp_id'] = timestamp_id  # Add timestamp ID
         config_dict['experiment']['training_environment'] = training_environment  # Add training environment
+        
+        # Add current experiment metadata
+        config_dict['current_experiment'] = {
+            'name': name,
+            'description': description,
+            'created_at': timestamp.isoformat(),
+            'timestamp_id': timestamp_id,
+            'training_environment': training_environment,
+            'config_file': f"{base_name}_{timestamp_id}_{training_environment}.json",
+            'experiment_type': 'new'  # This is a new experiment
+        }
         
         # Add GPU information if available
         try:
@@ -128,29 +144,13 @@ class ExperimentManager:
                 'error': str(e)
             }
         
-        # Create separate metadata file for experiment info
-        experiment_metadata = {
-            'experiment_info': {
-                'name': name,
-                'description': description,
-                'created_at': timestamp.isoformat(),
-                'version': "1.0",
-                'timestamp_id': timestamp_id,
-                'training_environment': training_environment,
-                'gpu_info': config_dict['experiment']['gpu_info']
-            },
-            'config_info': {
-                'base_config_path': base_config_path,
-                'config_file': experiment_filename,
-                'created_at': timestamp.isoformat()
-            }
+        # Add experiment metadata to the config (no separate metadata file)
+        config_dict['experiment_metadata'] = {
+            'base_config_path': base_config_path,
+            'config_file': f"{base_name}_{timestamp_id}_{training_environment}.json",
+            'created_at': timestamp.isoformat(),
+            'experiment_type': 'new'
         }
-        
-        # Save experiment metadata separately
-        metadata_filename = f"{base_name}_{timestamp_id}_metadata.json"
-        metadata_path = os.path.join(self.configs_dir, metadata_filename)
-        with open(metadata_path, 'w', encoding='utf-8') as f:
-            json.dump(experiment_metadata, f, indent=2, ensure_ascii=False)
         
         # Apply user overrides
         for key, value in overrides.items():
@@ -170,15 +170,9 @@ class ExperimentManager:
         # Check if name already contains the same timestamp_id to avoid duplication
         if name.endswith(f"_{timestamp_id}"):
             # Name already contains the timestamp, just add environment
-            base_name = name
             env_suffix = f"_{training_environment}" if training_environment != "unknown" else ""
-            experiment_filename = f"{base_name}{env_suffix}.json"
+            experiment_filename = f"{name}{env_suffix}.json"
         else:
-            # Extract base name without timestamp if it contains a different timestamp
-            base_name = name
-            if '_' in name and len(name.split('_')[-1]) == 15:  # Check if last part is timestamp format
-                base_name = '_'.join(name.split('_')[:-1])
-            
             # Add training environment to filename
             env_suffix = f"_{training_environment}" if training_environment != "unknown" else ""
             experiment_filename = f"{base_name}_{timestamp_id}{env_suffix}.json"
@@ -523,6 +517,156 @@ class ExperimentManager:
         )
         
         print(f"Template '{template_name}' created: {experiment_path}")
+    
+    def create_derived_experiment(
+        self,
+        source_experiment_name: str,
+        new_name: str,
+        new_description: str = "",
+        new_training_environment: str = "local_gpu",
+        **overrides
+    ) -> Tuple[str, str]:
+        """
+        Create a new experiment configuration derived from an existing experiment.
+        Records source experiment information in the new config.
+        
+        Args:
+            source_experiment_name: Name of the source experiment to derive from
+            new_name: Name for the new experiment
+            new_description: Description for the new experiment
+            new_training_environment: Training environment for the new experiment
+            **overrides: Configuration overrides for the new experiment
+            
+        Returns:
+            Tuple of (new_experiment_path, timestamp_id)
+        """
+        # Load source experiment
+        source_config_manager = self.load_experiment(source_experiment_name)
+        source_config = source_config_manager.get_config()
+        source_config_path = source_config_manager.config_path
+        
+        # Generate timestamp for new experiment
+        try:
+            from .timestamp_manager import get_timestamp_manager
+            timestamp_manager = get_timestamp_manager()
+            timestamp_id = timestamp_manager.create_experiment_timestamp()
+            timestamp = datetime.now()
+        except ImportError:
+            timestamp = datetime.now()
+            timestamp_id = timestamp.strftime('%Y%m%d_%H%M%S')
+        
+        # Convert source config to dict
+        config_dict = self._config_to_dict(source_config)
+        
+        # Extract base name for metadata
+        base_name = new_name
+        if '_' in new_name and len(new_name.split('_')[-1]) == 15:
+            base_name = '_'.join(new_name.split('_')[:-1])
+        
+        # Update experiment info for new experiment
+        config_dict['experiment']['name'] = new_name
+        config_dict['experiment']['description'] = new_description
+        config_dict['experiment']['created_at'] = timestamp.isoformat()
+        config_dict['experiment']['version'] = "1.0"
+        config_dict['experiment']['timestamp_id'] = timestamp_id
+        config_dict['experiment']['training_environment'] = new_training_environment
+        
+        # Add source experiment information (non-redundant)
+        config_dict['source_experiment_info'] = {
+            'source_experiment_name': source_config.experiment.name,
+            'source_description': source_config.experiment.description,
+            'source_created_at': source_config.experiment.created_at,
+            'source_timestamp_id': source_config.experiment.timestamp_id,
+            'source_training_environment': source_config.experiment.training_environment,
+            'source_config_file': os.path.basename(source_config_path),
+            'derivation_timestamp': timestamp.isoformat(),
+            'derivation_reason': f"Derived from {source_experiment_name} experiment"
+        }
+        
+        # Add current experiment metadata
+        config_dict['current_experiment'] = {
+            'name': new_name,
+            'description': new_description,
+            'created_at': timestamp.isoformat(),
+            'timestamp_id': timestamp_id,
+            'training_environment': new_training_environment,
+            'config_file': f"{base_name}_{timestamp_id}_{new_training_environment}.json",
+            'experiment_type': 'derived',
+            'source_experiment_name': source_experiment_name
+        }
+        
+        # Add GPU information for new environment
+        try:
+            if new_training_environment == "cloud":
+                config_dict['experiment']['gpu_info'] = {
+                    'type': 'cloud_gpu',
+                    'detected_during_training': True
+                }
+            elif new_training_environment in ["local_gpu", "local_cpu"]:
+                import torch
+                if torch.cuda.is_available():
+                    gpu_name = torch.cuda.get_device_name(0)
+                    gpu_memory = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                    config_dict['experiment']['gpu_info'] = {
+                        'type': 'local_gpu',
+                        'name': gpu_name,
+                        'memory_gb': gpu_memory,
+                        'detected_at': timestamp.isoformat()
+                    }
+                else:
+                    config_dict['experiment']['gpu_info'] = {
+                        'type': 'local_cpu',
+                        'name': 'CPU',
+                        'detected_at': timestamp.isoformat()
+                    }
+        except Exception as e:
+            config_dict['experiment']['gpu_info'] = {
+                'type': 'unknown',
+                'error': str(e)
+            }
+        
+        # Add experiment metadata
+        config_dict['experiment_metadata'] = {
+            'base_config_path': source_config_path,
+            'config_file': f"{base_name}_{timestamp_id}_{new_training_environment}.json",
+            'created_at': timestamp.isoformat(),
+            'experiment_type': 'derived',
+            'source_experiment_name': source_experiment_name
+        }
+        
+        # Apply user overrides
+        for key, value in overrides.items():
+            if '.' in key:
+                # Handle nested keys like 'model.d_model'
+                keys = key.split('.')
+                current = config_dict
+                for k in keys[:-1]:
+                    if k not in current:
+                        current[k] = {}
+                    current = current[k]
+                current[keys[-1]] = value
+            else:
+                # Handle top-level overrides
+                if key in config_dict and isinstance(config_dict[key], dict) and isinstance(value, dict):
+                    # Merge dictionaries instead of replacing
+                    config_dict[key].update(value)
+                else:
+                    config_dict[key] = value
+        
+        # Save new experiment configuration
+        env_suffix = f"_{new_training_environment}" if new_training_environment != "unknown" else ""
+        experiment_filename = f"{base_name}_{timestamp_id}{env_suffix}.json"
+        experiment_path = os.path.join(self.configs_dir, experiment_filename)
+        
+        with open(experiment_path, 'w', encoding='utf-8') as f:
+            json.dump(config_dict, f, indent=2, ensure_ascii=False)
+        
+        print(f"Derived experiment created: {experiment_filename}")
+        print(f"Configuration saved to: {experiment_path}")
+        print(f"Timestamp ID: {timestamp_id}")
+        print(f"Source experiment: {source_experiment_name}")
+        
+        return experiment_path, timestamp_id
     
     def _config_to_dict(self, config: TrainingConfigManager) -> Dict[str, Any]:
         """Convert TrainingConfigManager to dictionary."""
