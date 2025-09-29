@@ -1,0 +1,18 @@
+{
+    "python.defaultInterpreterPath": "/Users/shanlanshen/opt/anaconda3/envs/torch2.5/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.formatting.provider": "black",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.pytest_cache": true
+    },
+    "cursorpyright.analysis.autoImportCompletions": true,
+    "cursorpyright.analysis.typeCheckingMode": "basic"
+}
+

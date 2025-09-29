@@ -24,9 +24,8 @@ MANIFEST
 # PyTorch
 *.pth
 *.pt
-checkpoints/
-models/
-logs/
+*.pkl
+*.pickle
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -56,51 +55,58 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Data files
-data/
-datasets/
-*.csv
-*.json
+# Project specific
+# 可视化生成的图片和模型文件
+tests/visualizations/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+
+# 模型文件（太大，不适合版本控制）
+*.pth
+*.pt
 *.pkl
 *.pickle
 
-# Logs
+# 日志文件
 *.log
-logs/
 
-# Temporary files
-tmp/
-temp/
+# 临时文件
+*.tmp
+*.temp
 
-# Git
-.git/
-*.orig
-*.rej
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# IDE specific
-.vscode/settings.json
-.idea/
-*.swp
-*.swo
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Project specific
+# Checkpoint files and directories
 checkpoints/
-models/
-logs/
-wandb/
-tensorboard_logs/
+checkpoint_*/
+run_*/
+*_checkpoint.pt
+*_model.pt
+*_best.pt
+*_final.pt
+*_metadata.json
+training_history.json
+config.json
 
+# Cloud training files
+cloud_config.json
+cloud_results/
+temp_training_config.json
+*.log
+
+# Test output files
+test_model.pt
+transformer_model.pt
+transformer_full.pt
+transformer_model_screen.pt
+
+# Visualization output files
+transformer_structure.png
+transformer_structure_screen.png
+transformer_architecture.png
+multihead_attention_visualization.png
+multihead_attention_heads_visualization.png
+positional_encoding_visualization.png
+positional_encoding_3d_visualization.png
+transformer_project.zip
