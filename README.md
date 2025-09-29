@@ -147,6 +147,12 @@ python run.py --create-experiment --name small_test --description "Small model f
 
 # Create derived experiment from existing one
 python run.py --create-derived-experiment --source-experiment cloud_training_20250926_082552 --name local_enhanced --description "Local enhanced training derived from cloud" --new-environment local_gpu --overrides '{"training": {"epochs": 5, "learning_rate": 0.0002}}'
+
+# Create Colab automation notebook
+python run.py --create-colab-notebook
+
+# Run full Colab automation workflow
+python run.py --colab-automation
 ```
 
 #### 💾 **Checkpoint Management**
@@ -183,6 +189,8 @@ python run.py --cleanup-all
 ## 📖 Documentation
 
 - **[Unified Training Guide](UNIFIED_TRAINING_GUIDE.md)** - Complete unified training and management system documentation
+- **[Logging Guide](LOGGING_GUIDE.md)** - Structured logging system documentation
+- **[Colab Automation Guide](COLAB_AUTOMATION_GUIDE.md)** - Google Colab automation workflow
 - **[Testing Guide](tests/README_testing.md)** - Testing documentation
 - **[Development Guide](docs/DEVELOPMENT_GUIDE.md)** - Development workflow
 
@@ -202,6 +210,7 @@ python run.py --cleanup-all
 - ✅ **Schedulers** - Step and cosine annealing learning rate schedules
 - ✅ **Gradient Clipping** - Prevents gradient explosion
 - ✅ **Early Stopping** - Prevents overfitting
+- ✅ **Colab Automation** - One-click Google Colab training with automatic result download
 
 ### Data Management
 - ✅ **Translation Dataset** - Flexible dataset for translation tasks
@@ -341,6 +350,9 @@ python run.py --create-experiment --name cloud_training --description "Cloud tra
 
 # Run cloud training
 python run.py --train --experiment cloud_training --force-cloud
+
+# Or use Colab automation (recommended)
+python run.py --colab-automation
 ```
 
 ### **Step 4: Create Derived Local Experiment**

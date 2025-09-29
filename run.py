@@ -630,6 +630,336 @@ class UnifiedTrainer:
                 self.logger.success(LogCategory.CLOUD, "Cloud training stopped")
             else:
                 self.logger.error(LogCategory.CLOUD, "Failed to stop cloud training")
+    
+    # Colab automation methods
+    def create_colab_notebook(self):
+        """Create Colab automation notebook."""
+        with OperationContext("Creating Colab notebook", LogCategory.CLOUD):
+            try:
+                import json
+                
+                notebook_content = {
+                    "cells": [
+                        {
+                            "cell_type": "markdown",
+                            "metadata": {},
+                            "source": [
+                                "# 🤖 Transformer 训练自动化\n",
+                                "\n",
+                                "这个 Notebook 会自动完成以下步骤：\n",
+                                "1. 📥 克隆代码仓库\n",
+                                "2. 📦 安装依赖\n",
+                                "3. 🏃 执行训练\n",
+                                "4. 📤 下载结果\n"
+                            ]
+                        },
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "# 1. 克隆代码仓库\n",
+                                "!git clone https://github.com/Shanlans/transformer.git\n",
+                                "!cd transformer && ls -la"
+                            ]
+                        },
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "# 2. 安装依赖\n",
+                                "!cd transformer && pip install -r requirements.txt\n",
+                                "!cd transformer && pip install colabcode"
+                            ]
+                        },
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "# 3. 检查环境\n",
+                                "import torch\n",
+                                "print(f\"PyTorch 版本: {torch.__version__}\")\n",
+                                "print(f\"CUDA 可用: {torch.cuda.is_available()}\")\n",
+                                "if torch.cuda.is_available():\n",
+                                "    print(f\"GPU 设备: {torch.cuda.get_device_name(0)}\")\n",
+                                "    print(f\"GPU 内存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f}GB\")"
+                            ]
+                        },
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "# 4. 执行训练\n",
+                                "!cd transformer && python run.py --force-cloud --use-default"
+                            ]
+                        },
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "# 5. 检查训练结果\n",
+                                "!cd transformer && ls -la checkpoints/\n",
+                                "!cd transformer && find checkpoints/ -name \"*.pt\" -o -name \"*.json\" -o -name \"*.png\""
+                            ]
+                        },
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "# 6. 压缩结果\n",
+                                "!cd transformer && zip -r training_results.zip checkpoints/ config_history/ experiments/\n",
+                                "!cd transformer && ls -la *.zip"
+                            ]
+                        },
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "# 7. 下载结果到本地\n",
+                                "from google.colab import files\n",
+                                "files.download('/content/transformer/training_results.zip')\n",
+                                "print(\"✅ 结果已下载到本地！\")"
+                            ]
+                        },
+                        {
+                            "cell_type": "code",
+                            "execution_count": None,
+                            "metadata": {},
+                            "outputs": [],
+                            "source": [
+                                "# 8. 显示训练摘要\n",
+                                "import json\n",
+                                "import glob\n",
+                                "import os\n",
+                                "\n",
+                                "# 查找最新的训练历史\n",
+                                "history_files = glob.glob('/content/transformer/checkpoints/run_*/training_history.json')\n",
+                                "if history_files:\n",
+                                "    latest_history = max(history_files, key=os.path.getctime)\n",
+                                "    with open(latest_history, 'r') as f:\n",
+                                "        history = json.load(f)\n",
+                                "    \n",
+                                "    print(\"📊 训练摘要:\")\n",
+                                "    print(f\"   总轮数: {len(history.get('epochs', []))}\")\n",
+                                "    if history.get('epochs'):\n",
+                                "        print(f\"   最终损失: {history['epochs'][-1].get('train_loss', 'N/A'):.4f}\")\n",
+                                "        losses = [e.get('train_loss', float('inf')) for e in history['epochs'] if 'train_loss' in e]\n",
+                                "        if losses:\n",
+                                "            print(f\"   最佳损失: {min(losses):.4f}\")\n",
+                                "else:\n",
+                                "    print(\"⚠️ 未找到训练历史文件\")"
+                            ]
+                        }
+                    ],
+                    "metadata": {
+                        "colab": {
+                            "provenance": [],
+                            "toc_visible": True
+                        },
+                        "kernelspec": {
+                            "display_name": "Python 3",
+                            "name": "python3"
+                        },
+                        "language_info": {
+                            "name": "python"
+                        }
+                    },
+                    "nbformat": 4,
+                    "nbformat_minor": 0
+                }
+                
+                # 保存 Notebook
+                notebook_path = "colab_automation.ipynb"
+                with open(notebook_path, 'w', encoding='utf-8') as f:
+                    json.dump(notebook_content, f, indent=2, ensure_ascii=False)
+                
+                self.logger.success(LogCategory.CLOUD, f"Colab notebook created: {notebook_path}")
+                self.logger.info(LogCategory.CLOUD, "Next steps:")
+                self.logger.info(LogCategory.CLOUD, "1. Open Google Colab")
+                self.logger.info(LogCategory.CLOUD, "2. Upload colab_automation.ipynb")
+                self.logger.info(LogCategory.CLOUD, "3. Click 'Run All'")
+                self.logger.info(LogCategory.CLOUD, "4. Wait for training to complete")
+                self.logger.info(LogCategory.CLOUD, "5. Results will be automatically downloaded")
+                
+            except Exception as e:
+                self.logger.error(LogCategory.CLOUD, f"Failed to create Colab notebook: {e}")
+    
+    def run_colab_automation(self):
+        """Run full Colab automation workflow."""
+        with OperationContext("Colab automation workflow", LogCategory.CLOUD):
+            self.logger.print_header("GOOGLE COLAB AUTOMATION WORKFLOW")
+            
+            # Create notebook
+            self.create_colab_notebook()
+            
+            # Create additional automation files
+            self._create_automation_scripts()
+            
+            self.logger.success(LogCategory.CLOUD, "Colab automation workflow completed!")
+            self.logger.print_summary("Automation Files Created", {
+                "Notebook": "colab_automation.ipynb",
+                "Upload Script": "upload_to_colab.sh",
+                "Download Script": "download_from_colab.sh",
+                "Guide": "COLAB_AUTOMATION_GUIDE.md"
+            })
+    
+    def _create_automation_scripts(self):
+        """Create additional automation scripts."""
+        try:
+            # Create upload script
+            upload_script = """#!/bin/bash
+# 自动上传到 Google Colab 的脚本
+
+echo "🚀 开始上传到 Google Colab..."
+
+# 1. 创建项目压缩包
+echo "📦 创建项目压缩包..."
+zip -r transformer_project.zip . -x "*.git*" "checkpoints/*" "config_history/*" "experiments/results/*" "*.log" "*.tmp" "__pycache__/*" "*.pyc"
+
+# 2. 上传到 Google Drive (需要手动操作)
+echo "📤 请手动上传 transformer_project.zip 到 Google Drive"
+echo "   然后运行以下命令解压："
+echo "   !unzip transformer_project.zip -d /content/transformer"
+
+# 3. 运行训练
+echo "🏃 在 Colab 中运行训练："
+echo "   !cd /content/transformer && python run.py --force-cloud --use-default"
+
+echo "✅ 上传脚本完成！"
+"""
+            
+            with open("upload_to_colab.sh", 'w') as f:
+                f.write(upload_script)
+            os.chmod("upload_to_colab.sh", 0o755)
+            
+            # Create download script
+            download_script = """#!/bin/bash
+# 自动下载 Colab 结果的脚本
+
+echo "📥 开始下载 Colab 结果..."
+
+# 1. 检查本地结果目录
+if [ ! -d "colab_results" ]; then
+    mkdir colab_results
+fi
+
+# 2. 下载结果 (需要手动操作)
+echo "📤 请手动下载 Colab 中的结果文件到 colab_results/ 目录"
+echo "   或者使用以下 Python 代码："
+echo ""
+echo "   from google.colab import files"
+echo "   files.download('/content/transformer/training_results.zip')"
+
+# 3. 解压结果
+if [ -f "colab_results/training_results.zip" ]; then
+    echo "📦 解压结果..."
+    cd colab_results
+    unzip training_results.zip
+    cd ..
+    echo "✅ 结果已解压到 colab_results/ 目录"
+else
+    echo "⚠️ 未找到结果文件，请手动下载"
+fi
+
+echo "✅ 下载脚本完成！"
+"""
+            
+            with open("download_from_colab.sh", 'w') as f:
+                f.write(download_script)
+            os.chmod("download_from_colab.sh", 0o755)
+            
+            # Create automation guide
+            guide_content = """# 🤖 Google Colab 自动化指南
+
+## 📋 **快速开始**
+
+### **方法1：使用 Colab Notebook（推荐）**
+
+1. **打开 Colab**：访问 [Google Colab](https://colab.research.google.com/)
+2. **上传 Notebook**：上传 `colab_automation.ipynb`
+3. **一键运行**：点击 "运行全部" 按钮
+4. **自动下载**：训练完成后自动下载结果
+
+### **方法2：手动步骤**
+
+1. **克隆代码**：
+   ```python
+   !git clone https://github.com/Shanlans/transformer.git
+   ```
+
+2. **安装依赖**：
+   ```python
+   !cd transformer && pip install -r requirements.txt
+   !cd transformer && pip install colabcode
+   ```
+
+3. **执行训练**：
+   ```python
+   !cd transformer && python run.py --force-cloud --use-default
+   ```
+
+4. **下载结果**：
+   ```python
+   from google.colab import files
+   !cd transformer && zip -r results.zip checkpoints/
+   files.download('/content/transformer/results.zip')
+   ```
+
+## 🔧 **自动化脚本**
+
+- `colab_automation.ipynb`：完整的 Colab Notebook
+- `upload_to_colab.sh`：上传脚本
+- `download_from_colab.sh`：下载脚本
+
+## 📊 **预期结果**
+
+训练完成后，你将获得：
+- ✅ 训练好的模型检查点
+- ✅ 训练历史记录
+- ✅ 可视化图表
+- ✅ 评估结果
+- ✅ 配置文件
+
+## ⚠️ **注意事项**
+
+1. **会话时间**：Colab 会话最长 12 小时
+2. **GPU 限制**：免费用户有 GPU 使用限制
+3. **存储限制**：Colab 有存储空间限制
+4. **网络限制**：下载大文件可能较慢
+
+## 🆘 **故障排除**
+
+### **常见问题**：
+- **导入错误**：检查依赖是否正确安装
+- **内存不足**：减少批次大小或模型大小
+- **训练中断**：检查网络连接和会话状态
+
+### **获取帮助**：
+- 查看训练日志
+- 检查 Colab 控制台输出
+- 使用 `!nvidia-smi` 检查 GPU 状态
+"""
+            
+            with open("COLAB_AUTOMATION_GUIDE.md", 'w', encoding='utf-8') as f:
+                f.write(guide_content)
+            
+            self.logger.info(LogCategory.CLOUD, "Additional automation files created")
+            
+        except Exception as e:
+            self.logger.error(LogCategory.CLOUD, f"Failed to create automation scripts: {e}")
 
 
 def main():
@@ -651,6 +981,10 @@ def main():
     parser.add_argument('--cloud-status', action='store_true', help='Check cloud training status')
     parser.add_argument('--cloud-logs', action='store_true', help='Show cloud training logs')
     parser.add_argument('--cloud-stop', action='store_true', help='Stop cloud training')
+    
+    # Colab automation arguments
+    parser.add_argument('--create-colab-notebook', action='store_true', help='Create Colab automation notebook')
+    parser.add_argument('--colab-automation', action='store_true', help='Run full Colab automation workflow')
     
     # Training options
     parser.add_argument('--experiment', help='Experiment name for training')
@@ -845,6 +1179,14 @@ def main():
         
         elif args.cloud_stop:
             trainer.stop_cloud_training()
+            success = True
+        
+        elif args.create_colab_notebook:
+            trainer.create_colab_notebook()
+            success = True
+        
+        elif args.colab_automation:
+            trainer.run_colab_automation()
             success = True
         
         else:

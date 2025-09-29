@@ -77,7 +77,7 @@ class ColabManager:
             
             # Check if we're in Google Colab environment
             try:
-                import google.colab
+                import google.colab  # type: ignore
                 in_colab = True
                 print("✅ Running in Google Colab environment")
             except ImportError:

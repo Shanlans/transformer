@@ -11,7 +11,8 @@ This guide covers the unified training system with a single entry point (`run.py
 5. [Training Operations](#training-operations)
 6. [Resume Training](#resume-training)
 7. [Checkpoint Management](#checkpoint-management)
-8. [Advanced Usage](#advanced-usage)
+8. [Colab Automation](#colab-automation)
+9. [Advanced Usage](#advanced-usage)
 
 ## Quick Start
 
@@ -29,6 +30,9 @@ python run.py --train --experiment my_experiment
 
 # Create new experiment
 python run.py --create-experiment --name my_exp --description "My experiment"
+
+# Use Colab automation (recommended for cloud training)
+python run.py --colab-automation
 ```
 
 ## Unified Entry Point
@@ -289,6 +293,63 @@ python run.py --cleanup --keep-runs 3 --keep-checkpoints 5
    Checkpoints cleaned: 23
    Space freed: 125.67 MB
 ```
+
+## Colab Automation
+
+The unified training system includes comprehensive Google Colab automation features that allow you to easily run training on Google's free GPU resources.
+
+### Quick Colab Setup
+
+```bash
+# Create Colab automation notebook
+python run.py --create-colab-notebook
+
+# Run full Colab automation workflow
+python run.py --colab-automation
+```
+
+### Colab Automation Features
+
+- **One-Click Setup**: Automatically creates a complete Colab notebook
+- **Automatic Installation**: Installs all dependencies automatically
+- **GPU Detection**: Automatically detects and uses available GPU
+- **Training Execution**: Runs training with optimal settings
+- **Result Download**: Automatically downloads results to local machine
+- **Training Summary**: Provides comprehensive training statistics
+
+### Generated Files
+
+The automation creates several files:
+
+- `colab_automation.ipynb`: Ready-to-use Colab notebook
+- `upload_to_colab.sh`: Script for uploading code to Colab
+- `download_from_colab.sh`: Script for downloading results
+- `COLAB_AUTOMATION_GUIDE.md`: Detailed automation guide
+
+### Usage Workflow
+
+1. **Generate Files**: Run `python run.py --colab-automation`
+2. **Open Colab**: Go to [Google Colab](https://colab.research.google.com/)
+3. **Upload Notebook**: Upload `colab_automation.ipynb`
+4. **Run All**: Click "Run All" to execute the entire workflow
+5. **Download Results**: Results are automatically downloaded when training completes
+
+### Benefits
+
+- **Free GPU Access**: Use Google's free GPU resources
+- **No Local Setup**: No need to install CUDA or GPU drivers locally
+- **Automatic Management**: Handles all setup and cleanup automatically
+- **Result Synchronization**: Automatically downloads training results
+- **Reproducible**: Consistent environment across runs
+
+### Troubleshooting
+
+- **Session Timeout**: Colab sessions have 12-hour limits
+- **GPU Availability**: Free users have limited GPU access
+- **Memory Limits**: Large models may exceed Colab memory limits
+- **Network Issues**: Check internet connection for downloads
+
+For detailed information, see [Colab Automation Guide](COLAB_AUTOMATION_GUIDE.md).
 
 ## Advanced Usage
 
