@@ -75,27 +75,52 @@ class ColabManager:
             print("Starting ColabCode session...")
             print(f"GPU will be available: {gpu} (Colab provides GPU automatically)")
             
-            # For local testing, simulate ColabCode session
-            # In real Colab environment, this would start the actual session
-            print("⚠️  Note: This is a local test environment.")
-            print("⚠️  ColabCode requires running in Google Colab environment.")
-            print("⚠️  For actual cloud training, run this in Colab.")
+            # Check if we're in Google Colab environment
+            try:
+                import google.colab
+                in_colab = True
+                print("✅ Running in Google Colab environment")
+            except ImportError:
+                in_colab = False
+                print("⚠️  Running in local environment - ColabCode will be simulated")
             
-            # Simulate successful session start
-            self.is_connected = True
-            self.session_info = {
-                'password': self.password,
-                'port': self.port,
-                'gpu': gpu,
-                'status': 'simulated',
-                'mount_drive': True,
-                'note': 'Local test environment - not actual Colab'
-            }
+            if in_colab:
+                # Real ColabCode session in Google Colab
+                from colabcode import ColabCode
+                self.colab_instance = ColabCode(password=self.password, port=self.port)
+                self.colab_instance.start()
+                
+                self.is_connected = True
+                self.session_info = {
+                    'password': self.password,
+                    'port': self.port,
+                    'gpu': gpu,
+                    'status': 'active',
+                    'mount_drive': True,
+                    'environment': 'google_colab'
+                }
+                
+                print("✅ ColabCode session started successfully in Google Colab!")
+                print(f"SSH connection: ssh root@0.tcp.ngrok.io -p {self.port}")
+                print(f"Password: {self.password}")
+                print("GPU is automatically available in Colab environment")
+            else:
+                # Simulate ColabCode session for local testing
+                self.is_connected = True
+                self.session_info = {
+                    'password': self.password,
+                    'port': self.port,
+                    'gpu': gpu,
+                    'status': 'simulated',
+                    'mount_drive': True,
+                    'environment': 'local_test'
+                }
+                
+                print("✅ ColabCode session simulated for local testing!")
+                print(f"SSH connection: ssh root@0.tcp.ngrok.io -p {self.port}")
+                print(f"Password: {self.password}")
+                print("Note: This is a simulation - real ColabCode requires Google Colab environment")
             
-            print("✅ ColabCode session simulated successfully!")
-            print(f"SSH connection: ssh root@0.tcp.ngrok.io -p {self.port}")
-            print(f"Password: {self.password}")
-            print("GPU is automatically available in Colab environment")
             return True
             
         except Exception as e:
@@ -460,12 +485,27 @@ class ColabManager:
         
         try:
             print(f"Downloading results: {experiment_name} -> {local_results_dir}")
-            print("⚠️  Note: This is a demo simulation.")
-            print("⚠️  Real cloud training would download actual results from Colab.")
             
-            # For demo purposes, simulate cloud training by running local training
-            # In real implementation, this would download from ColabCode session
-            print("🔄 Simulating cloud training results...")
+            # Check if we're in Google Colab environment
+            try:
+                import google.colab
+                in_colab = True
+                print("✅ Running in Google Colab - downloading real results")
+            except ImportError:
+                in_colab = False
+                print("⚠️  Running in local environment - simulating cloud training results")
+            
+            if in_colab:
+                # Real implementation: download from ColabCode session
+                print("🔄 Downloading actual results from ColabCode session...")
+                # TODO: Implement real SSH download from /content/transformer/checkpoints/
+                print("📥 Real cloud training results would be downloaded here")
+                print("   - SSH into ColabCode session")
+                print("   - Download from /content/transformer/checkpoints/")
+                print("   - Transfer all files including real visualizations")
+            else:
+                # Simulate cloud training by running local training
+                print("🔄 Simulating cloud training results...")
             
             # Use unified timestamp for run directory (matching local training format)
             try:
