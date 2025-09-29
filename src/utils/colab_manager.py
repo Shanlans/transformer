@@ -607,11 +607,19 @@ class ColabManager:
                             for item in os.listdir(latest_run):
                                 src = os.path.join(latest_run, item)
                                 dst = os.path.join(full_run_dir, item)
+                                
+                                # Check if source and destination are the same file
+                                if os.path.abspath(src) == os.path.abspath(dst):
+                                    print(f"⚠️  Skipping {item}: source and destination are the same file")
+                                    continue
+                                
                                 if os.path.isdir(src):
                                     if os.path.exists(dst):
                                         shutil.rmtree(dst)
                                     shutil.copytree(src, dst)
                                 else:
+                                    # Ensure destination directory exists
+                                    os.makedirs(os.path.dirname(dst), exist_ok=True)
                                     shutil.copy2(src, dst)
                             
                             # Clean up the temporary run directory
