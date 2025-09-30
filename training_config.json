@@ -35,10 +35,10 @@
     "eps": 1e-9
   },
   "scheduler": {
-    "type": "none",
+    "type": "cosine",
     "step_size": 10,
     "gamma": 0.5,
-    "T_max": 100
+    "T_max": 10
   },
   "loss": {
     "type": "masked",

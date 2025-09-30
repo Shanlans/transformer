@@ -358,12 +358,18 @@ class TransformerTrainer:
             # Validation
             val_metrics = self.validate()
             
+            # Evaluation metrics (if evaluator is set)
+            eval_metrics = {}
+            if self.evaluator is not None and epoch % 2 == 0:  # Evaluate every 2 epochs to save time
+                print("  Computing evaluation metrics...")
+                eval_metrics = self.evaluate_model(self.val_dataloader, max_samples=50)
+            
             # Learning rate scheduling
             if self.scheduler is not None:
                 self.scheduler.step()
             
             # Combine metrics
-            epoch_metrics = {**train_metrics, **val_metrics}
+            epoch_metrics = {**train_metrics, **val_metrics, **eval_metrics}
             epoch_metrics['epoch'] = epoch + 1
             epoch_metrics['epoch_time'] = time.time() - epoch_start_time
             epoch_metrics['timestamp'] = datetime.now().isoformat()
@@ -377,6 +383,10 @@ class TransformerTrainer:
             print(f"  Train Loss: {train_metrics['train_loss']:.4f}")
             if val_metrics:
                 print(f"  Val Loss: {val_metrics['val_loss']:.4f}")
+            if eval_metrics:
+                print(f"  BLEU Score: {eval_metrics.get('bleu_score', 0.0):.4f}")
+                print(f"  Accuracy: {eval_metrics.get('accuracy', 0.0):.4f}")
+                print(f"  Perplexity: {eval_metrics.get('perplexity', 0.0):.2f}")
             print(f"  Learning Rate: {train_metrics['learning_rate']:.6f}")
             print(f"  Epoch Time: {epoch_metrics['epoch_time']:.2f}s")
             
@@ -574,23 +584,27 @@ class TransformerTrainer:
             print("Evaluator not set. Please call set_evaluator() first.")
             return {}
         
-        print("Evaluating model...")
-        metrics = self.evaluator.evaluate_model(
-            model=self.model,
-            dataloader=dataloader,
-            device=str(self.device),
-            max_samples=max_samples
-        )
-        
-        # Plot evaluation metrics
-        if metrics:
-            self.visualizer.plot_evaluation_metrics(
-                {k: [v] for k, v in metrics.items()},
-                "evaluation_metrics.png"
+        try:
+            print("Evaluating model...")
+            metrics = self.evaluator.evaluate_model(
+                model=self.model,
+                dataloader=dataloader,
+                device=str(self.device),
+                max_samples=max_samples
             )
-        
-        print("Model evaluation completed!")
-        return metrics
+            
+            # Plot evaluation metrics
+            if metrics:
+                self.visualizer.plot_evaluation_metrics(
+                    {k: [v] for k, v in metrics.items()},
+                    "evaluation_metrics.png"
+                )
+            
+            print("Model evaluation completed!")
+            return metrics
+        except Exception as e:
+            print(f"Error during evaluation: {e}")
+            return {}
     
     def visualize_attention(
         self,

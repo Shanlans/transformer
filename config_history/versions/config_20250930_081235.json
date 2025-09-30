@@ -42,10 +42,10 @@
     "eps": 1e-09
   },
   "scheduler": {
-    "type": "none",
+    "type": "cosine",
     "step_size": 10,
     "gamma": 0.5,
-    "T_max": 100
+    "T_max": 10
   },
   "loss": {
     "type": "masked",
@@ -95,15 +95,15 @@
   },
   "resume": null,
   "version_info": {
-    "version_id": "config_20250930_064359",
-    "created_at": "2025-09-30T06:44:03.535971",
-    "description": "Training run starting at 2025-09-30 06:44:03",
+    "version_id": "config_20250930_081235",
+    "created_at": "2025-09-30T08:12:39.695646",
+    "description": "Training run starting at 2025-09-30 08:12:39",
     "tags": [
       "training",
       "auto_saved"
     ],
     "source_path": "training_config.json",
-    "config_hash": "c1621bd2631dc0398e052b844f1746d7"
+    "config_hash": "ae52c4b8af322facf28cfef8b19ad83b"
   },
   "source_experiment": {
     "name": "transformer_translation",
@@ -117,10 +117,10 @@
   "current_experiment": {
     "name": "transformer_translation_continuation",
     "description": "Continuation of transformer_translation experiment",
-    "created_at": "2025-09-30T06:44:03.536386",
-    "timestamp_id": "20250930_064359",
+    "created_at": "2025-09-30T08:12:39.696140",
+    "timestamp_id": "20250930_081235",
     "training_environment": "local",
-    "config_file": "config_20250930_064359.json",
+    "config_file": "config_20250930_081235.json",
     "experiment_type": "continuation",
     "source_experiment_id": null
   }
